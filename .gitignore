@@ -7,3 +7,4 @@ dist/
 # artefacts de build Tauri
 src-tauri/target/
 src-tauri/gen/
+dist-single/

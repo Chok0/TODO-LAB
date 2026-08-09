@@ -7,26 +7,38 @@
 3. **Le jeu récompense, il n'interrompt pas** : pas de modal bloquante (même les événements de corruption sont des cartes épinglées, DEC-09) ; les feedbacks sont brefs et locaux.
 4. **Habitudes invisibles par défaut** : panneau replié à chaque démarrage, aucun contenu affiché passivement (`03` §1.3).
 
-## 2. Layout général (une fenêtre, DEC-01)
+## 2. Layout général (deux fenêtres, DEC-12)
+
+Les deux fenêtres se calent sur la **zone de travail** de l'écran — l'écran moins
+les barres système — donc rien ne passe jamais sous la barre des tâches.
 
 ```
-┌─────────────────────────────┐ 380px, ancrée à droite
-│ ▪ barre de titre fine       │ drag, pin (always-on-top), mode discret, ⚙
-├─────────────────────────────┤
-│ [quick-add ______________ ] │ + chips du parseur
-├─────────────────────────────┤
-│ ▼ Aujourd'hui           (3) │ cartes todo
-│ ▼ Cette semaine         (5) │
-│ ▶ Plus tard             (8) │ replié
-│ ▶ Habitudes              ·  │ TOUJOURS replié au démarrage
-├─────────────────────────────┤
-│ ══ DOCK MODULES ══          │ onglets accordéon (un seul déplié)
-│ ▶ 🧪 Labo R&D               │
-│ ▼ ⚗ Labo Production        │ cartes machines, jauges de cycle
-│ ▶ 🌱 Farming            (2) │ badge : parcelles prêtes
-│ ▶ ✉ Log                 (1) │ badge : lettres non lues
-└─────────────────────────────┘
+┌──────────────────────────────────────────────┬──────────────────┐
+│                                              │ ▪ barre de titre │ ← fenêtre `todo`
+│                  (bureau)                    │ [quick-add ____] │   380 px, bord droit,
+│                                              │ ▼ Aujourd'hui (3)│   hauteur utile
+│                                              │ ▼ Cette semaine  │
+│                                              │ ▶ Plus tard      │
+│                                              │ ▶ Habitudes    · │ ← toujours replié
+│                                              │                  │
+├──────────────────────────────────────────────┤                  │
+│ CULTURES   ÉTABLI            COURRIER  CPT.  │                  │ ← fenêtre `atelier`
+│   ▓▓  ▓▓   ▄▟█▄  ▄▟█▄        [note]   14 EN  │                  │   240 px de haut,
+│  ─────────────────────────────────────────── │                  │   largeur restante
+│  Semer     Recherche Réglages  Log    Zone   │                  │
+└──────────────────────────────────────────────┴──────────────────┘
+                    ▲ barre des tâches en dessous
 ```
+
+**La colonne todo** reste volontairement sobre : c'est l'outil de travail.
+**Le bandeau atelier** est une *scène en élévation*, pas une liste — une seule
+ligne de sol traverse toute la largeur ; les cultures y sont posées, l'établi
+est un meuble dont le plateau porte les machines, le courrier est épinglé au
+mur. Ce qui demande un formulaire (recette, arbre de recherche, lecture du
+courrier) s'ouvre dans un panneau au-dessus du bandeau.
+
+Hors Tauri (navigateur, fichier HTML) il n'y a qu'une fenêtre : les deux vues
+cohabitent dans la page, ce qui donne un aperçu fidèle de la disposition.
 
 - **Mode discret** : tout replié → barre verticale de ~48 px (icônes + badges only). Un clic restaure l'état précédent des panneaux.
 - Événement de corruption en attente : carte épinglée en tête du dock, liseré rouge/or, badge sur l'icône tray. Elle ne bloque rien d'autre que les nouveaux cycles illégaux.

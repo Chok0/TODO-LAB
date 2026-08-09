@@ -33,6 +33,15 @@
   --energy: #e9c46a;
   --kess: #b08d3e;
 
+  /* décor de l'atelier — un ancien atelier de lutherie : bois, acier, verre */
+  --wall: #1a2027;
+  --wall-far: #141a20;
+  --floor: #0f1419;
+  --bench: #6b5844;
+  --bench-top: #7d6850;
+  --bench-dark: #4a3c2e;
+  --glass: #7fb0a8;
+
   /* géométrie */
   --radius: 6px;
   --radius-sm: 3px;

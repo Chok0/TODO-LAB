@@ -60,6 +60,15 @@ fenêtres, compositeur, ni bureau :
 - Récupération après corruption volontaire du fichier de sauvegarde côté Tauri
   (le chemin est couvert côté navigateur et par les tests Rust d'écriture atomique).
 
+## 4b. Ajouts postérieurs à la V1 — vérifié / non vérifié
+
+| Point | État |
+|---|---|
+| Deux vues (`?zone=todo`, `?zone=atelier`) rendues sans erreur en navigateur | ✅ |
+| Scène de l'atelier : 4 stations alignées sur une ligne de sol commune | ✅ |
+| Synchronisation hôte/cliente entre fenêtres Tauri | ⚠️ compile et suit un modèle simple (un seul écrivain), **non exécuté** faute de gestionnaire de fenêtres dans le conteneur |
+| Placement réel des deux fenêtres sur la zone de travail | ⚠️ non vérifiable ici — à contrôler au premier lancement |
+
 ## 5. Écarts assumés par rapport à la spécification
 
 | Point | Spec | Livré | Raison |
@@ -68,3 +77,4 @@ fenêtres, compositeur, ni bureau :
 | Tâche sans échéance | groupe « Plus tard » | groupe « Aujourd'hui » | Une tâche qu'on vient d'écrire disparaissait dans un panneau replié — défaut d'usage constaté au test. Docs 03 et 11 mises à jour. |
 | Rendement médicinale, coût agroécologie, taxe de corruption, coût des incidents, bonus Coopérative | valeurs initiales des docs | recalibrés | L'économie légale ne décollait pas et la voie illégale était strictement supérieure. Corrigé et documenté dans `02` et `06`. |
 | Presse et Catalyseur (machines) | V1.5 | absents | Conforme au périmètre. |
+| Nombre de fenêtres | une seule (DEC-01) | deux (DEC-12) | Le dock vertical étouffait la partie jeu. Demande explicite, et le bandeau large est ce qui permet une vraie scène. |

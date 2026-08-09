@@ -1,5 +1,11 @@
-//! Coque desktop (docs/09 §7) : fenêtre-widget, tray, persistance, notifications.
+//! Coque desktop (docs/09 §7) : deux fenêtres-widgets, tray, persistance.
 //! Rust ne porte aucune règle de jeu.
+//!
+//! Disposition voulue : la colonne todo ancrée au bord droit sur toute la
+//! hauteur utile, et le bandeau atelier posé juste au-dessus de la barre des
+//! tâches, sur la largeur restante. Les deux se calent sur la *zone de travail*
+//! de l'écran — c'est-à-dire l'écran moins les barres système — de sorte que
+//! rien ne passe sous la barre des tâches, quelle que soit sa position.
 
 mod persist;
 
@@ -9,43 +15,68 @@ use tauri::{
     Emitter, Manager, WindowEvent,
 };
 
-/// Largeur par défaut du widget, alignée sur `tauri.conf.json`.
-const DEFAULT_WIDTH: f64 = 380.0;
+const TODO_LABEL: &str = "todo";
+const ATELIER_LABEL: &str = "atelier";
 
-/// Ancre la fenêtre au bord droit de l'écran, pleine hauteur.
-///
-/// Tout se calcule en unités logiques : mélanger pixels physiques et logiques
-/// doublerait la fenêtre sur un écran HiDPI. La largeur courante n'est utilisée
-/// que si elle est plausible — au tout premier appel la fenêtre n'est pas encore
-/// réalisée et `outer_size()` peut répondre 0, ce qui ferait échouer GTK.
-fn dock_right(window: &tauri::WebviewWindow) {
-    let Ok(Some(monitor)) = window.current_monitor() else {
+const TODO_WIDTH: f64 = 380.0;
+const ATELIER_HEIGHT: f64 = 240.0;
+/// En dessous, on renonce au bandeau plutôt que de produire un moignon.
+const MIN_ATELIER_WIDTH: f64 = 520.0;
+
+/// Cale les deux fenêtres sur la zone de travail de l'écran.
+fn dock_windows(app: &tauri::AppHandle) {
+    let Some(todo) = app.get_webview_window(TODO_LABEL) else {
         return;
     };
+    let Ok(Some(monitor)) = todo.current_monitor() else {
+        return;
+    };
+
+    // tout en unités logiques : mélanger physique et logique doublerait les
+    // fenêtres sur un écran HiDPI
     let scale = monitor.scale_factor();
-    let screen = monitor.size().to_logical::<f64>(scale);
-    if screen.width <= 0.0 || screen.height <= 0.0 {
+    let area = monitor.work_area();
+    let origin = tauri::PhysicalPosition::new(area.position.x, area.position.y).to_logical::<f64>(scale);
+    let size = tauri::PhysicalSize::new(area.size.width, area.size.height).to_logical::<f64>(scale);
+    if size.width <= 0.0 || size.height <= 0.0 {
         return;
     }
 
-    let current = window
-        .outer_size()
-        .map(|s| s.to_logical::<f64>(scale).width)
-        .unwrap_or(0.0);
-    let width = if current >= 100.0 { current } else { DEFAULT_WIDTH }.min(screen.width);
+    let todo_width = TODO_WIDTH.min(size.width);
+    let _ = todo.set_size(tauri::LogicalSize::new(todo_width, size.height));
+    let _ = todo.set_position(tauri::LogicalPosition::new(
+        origin.x + size.width - todo_width,
+        origin.y,
+    ));
 
-    let _ = window.set_size(tauri::LogicalSize::new(width, screen.height));
-    let _ = window.set_position(tauri::LogicalPosition::new(screen.width - width, 0.0));
+    if let Some(atelier) = app.get_webview_window(ATELIER_LABEL) {
+        let width = size.width - todo_width;
+        let height = ATELIER_HEIGHT.min(size.height);
+        if width < MIN_ATELIER_WIDTH {
+            let _ = atelier.hide();
+        } else {
+            let _ = atelier.set_size(tauri::LogicalSize::new(width, height));
+            let _ = atelier.set_position(tauri::LogicalPosition::new(
+                origin.x,
+                origin.y + size.height - height,
+            ));
+        }
+    }
 }
 
 #[tauri::command]
-fn set_always_on_top(window: tauri::WebviewWindow, flag: bool) -> Result<(), String> {
-    window.set_always_on_top(flag).map_err(|e| e.to_string())
+fn set_always_on_top(app: tauri::AppHandle, flag: bool) -> Result<(), String> {
+    for label in [TODO_LABEL, ATELIER_LABEL] {
+        if let Some(window) = app.get_webview_window(label) {
+            window.set_always_on_top(flag).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]
-fn reset_window_position(window: tauri::WebviewWindow) -> Result<(), String> {
-    dock_right(&window);
+fn reset_window_position(app: tauri::AppHandle) -> Result<(), String> {
+    dock_windows(&app);
     Ok(())
 }
 
@@ -60,16 +91,25 @@ fn notify(app: tauri::AppHandle, title: String, body: String) -> Result<(), Stri
         .map_err(|e| e.to_string())
 }
 
+/// Les deux fenêtres apparaissent et disparaissent ensemble : c'est un seul jeu.
 fn toggle_visibility(app: &tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        match window.is_visible() {
-            Ok(true) => {
+    let visible = app
+        .get_webview_window(TODO_LABEL)
+        .and_then(|w| w.is_visible().ok())
+        .unwrap_or(false);
+
+    for label in [TODO_LABEL, ATELIER_LABEL] {
+        if let Some(window) = app.get_webview_window(label) {
+            if visible {
                 let _ = window.hide();
-            }
-            _ => {
+            } else {
                 let _ = window.show();
-                let _ = window.set_focus();
             }
+        }
+    }
+    if !visible {
+        if let Some(window) = app.get_webview_window(TODO_LABEL) {
+            let _ = window.set_focus();
         }
     }
 }
@@ -79,8 +119,12 @@ pub fn run() {
     tauri::Builder::default()
         // deux instances corrompraient la sauvegarde : la seconde réveille la première
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
+            for label in [TODO_LABEL, ATELIER_LABEL] {
+                if let Some(window) = app.get_webview_window(label) {
+                    let _ = window.show();
+                }
+            }
+            if let Some(window) = app.get_webview_window(TODO_LABEL) {
                 let _ = window.set_focus();
             }
         }))
@@ -96,9 +140,10 @@ pub fn run() {
         ])
         .setup(|app| {
             let show = MenuItem::with_id(app, "toggle", "Afficher / masquer", true, None::<&str>)?;
+            let dock = MenuItem::with_id(app, "dock", "Recaler les fenêtres", true, None::<&str>)?;
             let quiet = MenuItem::with_id(app, "quiet", "Mode discret", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show, &quiet, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &dock, &quiet, &quit])?;
 
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
@@ -107,8 +152,9 @@ pub fn run() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "toggle" => toggle_visibility(app),
+                    "dock" => dock_windows(app),
                     "quiet" => {
-                        if let Some(window) = app.get_webview_window("main") {
+                        if let Some(window) = app.get_webview_window(TODO_LABEL) {
                             let _ = window.show();
                             let _ = window.emit("tray://quiet-mode", ());
                         }
@@ -118,16 +164,19 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            if let Some(window) = app.get_webview_window("main") {
-                dock_right(&window);
-            }
+            dock_windows(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
-            // fermer la fenêtre la masque : l'app continue de vivre dans le tray
+            // fermer une fenêtre masque tout : l'app continue de vivre dans le tray
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let _ = window.hide();
+                let app = window.app_handle();
+                for label in [TODO_LABEL, ATELIER_LABEL] {
+                    if let Some(w) = app.get_webview_window(label) {
+                        let _ = w.hide();
+                    }
+                }
             }
         })
         .run(tauri::generate_context!())

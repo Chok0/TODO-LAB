@@ -13,6 +13,7 @@ import { currentBand, unreadLetters, readyPlots } from '../game-logic/selectors'
 import { dayKey } from '../game-logic/time';
 import { enforceInvariants } from '../data/migrations';
 import { isTauri, loadGame, saveGame, serialize, deserialize } from '../data/save';
+import { broadcastState, isHost, onAction, onState, sendAction } from './sync';
 import { groupTodos } from '../game-logic/todos/views';
 import type { GameState } from '../data/schema';
 
@@ -147,6 +148,15 @@ export function undo(): void {
 // ---------------------------------------------------------------- dispatch
 
 export function dispatch(action: Action): void {
+  // fenêtre cliente : l'action part à l'hôte, qui seul fait autorité
+  if (!isHost()) {
+    void sendAction(action);
+    return;
+  }
+  applyLocally(action);
+}
+
+function applyLocally(action: Action): void {
   const before = get(game);
   const now = Date.now();
   const result = applyAction(before, action, now, makeRng(before));
@@ -156,6 +166,21 @@ export function dispatch(action: Action): void {
   game.set(result.state);
   pushToasts(result.effects);
   scheduleSave();
+  publish();
+}
+
+// ------------------------------------------------------------- diffusion
+
+let publishTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Diffuse l'état aux autres fenêtres, groupé pour éviter les rafales. */
+function publish(): void {
+  if (!isHost()) return;
+  if (publishTimer) return;
+  publishTimer = setTimeout(() => {
+    publishTimer = null;
+    void broadcastState(get(game));
+  }, 120);
 }
 
 function labelFor(action: Action): string {
@@ -174,9 +199,12 @@ function labelFor(action: Action): string {
 let tickTimer: ReturnType<typeof setInterval> | null = null;
 
 export function tick(): void {
-  const state = get(game);
   const now = Date.now();
   nowStore.set(now);
+  // la fenêtre cliente n'a qu'une horloge d'affichage : elle ne simule rien
+  if (!isHost()) return;
+
+  const state = get(game);
   if (now <= state.meta.lastTickAt) return;
 
   const result = advanceTime(state, state.meta.lastTickAt, now, makeRng(state));
@@ -184,6 +212,7 @@ export function tick(): void {
   if (result.effects.length) {
     pushToasts(result.effects);
     scheduleSave();
+    publish();
   }
 }
 
@@ -231,6 +260,17 @@ async function notifyDueToday(state: GameState): Promise<void> {
 // ------------------------------------------------------------ cycle de vie
 
 export async function initialize(): Promise<void> {
+  // fenêtre cliente : rien à charger, l'hôte envoie tout
+  if (!isHost()) {
+    await onState((state) => game.set(state));
+    ready.set(true);
+    tickTimer = setInterval(tick, BALANCE.tickInterval);
+    return;
+  }
+
+  // hôte : applique les actions venues des autres fenêtres
+  await onAction((action) => applyLocally(action));
+
   const outcome = await loadGame();
 
   if (outcome.state) {
@@ -250,6 +290,7 @@ export async function initialize(): Promise<void> {
   tick();
   enforceInvariants(get(game), false);
   ready.set(true);
+  publish();
   void notifyDueToday(get(game));
 
   if (tickTimer) clearInterval(tickTimer);

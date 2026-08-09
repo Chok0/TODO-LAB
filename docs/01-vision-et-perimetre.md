@@ -71,7 +71,7 @@ Décisions prises pendant la phase de documentation, au-delà de la note de cadr
 
 | ID | Décision | Justification |
 |---|---|---|
-| DEC-01 | **Une seule fenêtre en V1** : la colonne droite contient todos + dock modules + log. Le "bandeau du bas" détaché devient une option V2. | Simplifie drastiquement la gestion de fenêtres Tauri (positionnement, always-on-top, multi-écrans) sans sacrifier le principe "tout repliable". |
+| ~~DEC-01~~ | ~~Une seule fenêtre en V1~~ — **renversée après essai (DEC-12)**. | — |
 | DEC-02 | **Sauvegarde JSON versionnée** (fichier unique + écriture atomique + 3 backups rotatifs), pas SQLite en V1. | Volume de données faible, schéma évolutif, migrations simples en TS. SQLite réévalué en V2 si l'historique devient lourd. |
 | DEC-03 | **Toute la logique de jeu en TypeScript pur** (`/src/game-logic`), Rust limité à : fenêtre, tray, persistance, notifications. | Testable en Vitest sans Tauri, itération rapide, un seul langage pour l'équilibrage. |
 | DEC-04 | **Identifiants de code en anglais, textes UI en français** centralisés dans `/src/i18n/fr.ts`. | Convention d'écosystème ; la table de correspondance domaine FR→EN est dans `10-modele-de-donnees.md` §1. |
@@ -82,6 +82,8 @@ Décisions prises pendant la phase de documentation, au-delà de la note de cadr
 | DEC-09 | Événement de corruption = **carte épinglée non bloquante** dans le dock, mais bloque le lancement de nouvelles productions illégales tant qu'irrésolu. | Respecte la discrétion du widget tout en créant la pression voulue. |
 | DEC-10 | **Bootstrap narratif et économique** : l'atelier de l'oncle contient un extracteur récupérable (construction offerte après R&D) + 3 graines médicinales + une dette d'ouverture de 500 ₭ envers la Zone. | Explique mécaniquement le besoin d'argent rapide (note §4b) et fournit le premier arc narratif. |
 | DEC-11 | Fenêtre fermée = production machines plafonnée à **12 h** de rattrapage ; croissance des plantes **non plafonnée** (durée fixe). | Standard idle : récompense le retour sans rendre l'absence optimale. |
+| DEC-12 | **Deux fenêtres** (renverse DEC-01) : `todo` ancrée au bord droit sur la hauteur utile, `atelier` posée au-dessus de la barre des tâches sur la largeur restante. Les deux se calent sur la *zone de travail* de l'écran. | Le dock vertical de 380 px étouffait la partie jeu : elle n'y tenait qu'en listes. Un bandeau large permet une scène en élévation — établi, cultures, mur — c'est-à-dire un jeu plutôt qu'un tableau de bord. |
+| DEC-13 | La fenêtre `todo` est **l'hôte** : elle seule fait avancer le temps et écrit la sauvegarde. `atelier` est cliente — elle envoie ses actions et affiche l'état diffusé. Chaque fenêtre garde une horloge d'affichage locale pour ses jauges. | Une seule horloge, un seul écrivain : pas de partie divergente ni d'écriture concurrente. Diffuser l'état seulement quand il change évite d'envoyer l'état complet chaque seconde. |
 
 ## 9. Carte de la documentation
 
