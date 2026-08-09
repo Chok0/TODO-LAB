@@ -1,0 +1,158 @@
+@import './assets/svg/tokens.css';
+
+@font-face {
+  font-family: 'Plex Sans';
+  src: url('/fonts/plex-sans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Plex Sans';
+  src: url('/fonts/plex-sans-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Plex Mono';
+  src: url('/fonts/plex-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Special Elite';
+  src: url('/fonts/special-elite-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-0);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  justify-content: flex-end;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text-0);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 5px 7px;
+  user-select: text;
+}
+
+input:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid var(--lab);
+  outline-offset: 1px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- utilitaires partagés ---------- */
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: var(--text-dim);
+}
+
+.tiny {
+  font-size: 11px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+}
+
+.btn {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  background: var(--bg-2);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--line);
+}
+
+.btn.primary {
+  border-color: color-mix(in oklab, var(--lab) 60%, var(--line));
+  background: color-mix(in oklab, var(--lab) 22%, var(--bg-2));
+}
+
+.btn.danger {
+  border-color: color-mix(in oklab, var(--danger) 60%, var(--line));
+  background: color-mix(in oklab, var(--danger) 18%, var(--bg-2));
+}
+
+.empty {
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 6px 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -43,7 +43,7 @@ Contrat du composant réutilisable — tous les panneaux de l'app l'utilisent :
 ## 4. Colonne todo
 
 - **Carte todo** : fond teinté par catégorie (perso/pro), bordure gauche + petite icône par type de récurrence (ponctuelle/fixe/flexible/abstinence/compteur — `12` §5), titre, échéance relative (« ce soir », « jeu. »), points de difficulté (1–4 points discrets).
-- Groupes : Aujourd'hui (occurrences dues + échéances du jour), Cette semaine, Plus tard. Tri par échéance puis difficulté décroissante.
+- Groupes : Aujourd'hui (occurrences dues, échéances du jour **et tâches sans échéance** — c'est l'inbox : une tâche qu'on vient d'écrire ne doit jamais disparaître hors de vue), Cette semaine, Plus tard (échéances au-delà de la semaine). Tri par échéance puis difficulté décroissante. Le groupe qui reçoit une todo se déplie automatiquement à la création.
 - Complétion : case → micro-animation (`12` §8) + flottant `+X EN` ; undo toast 10 s (`03` §5).
 - Compteur d'habitude : bouton `+1` et total du jour visibles uniquement le panneau déplié ; « j'ai craqué » = bouton texte discret, confirmation inline en un tap.
 - Édition : clic sur carte → popover d'édition (mêmes chips que le parseur + champs gain/perte/seuils).

@@ -349,7 +349,7 @@ export function createInitialState(now: Timestamp, seed: number, dayKeyFn: (ts: 
       alwaysOnTop: true,
       opacity: 0.94,
       windowPos: null,
-      collapsedPanels: { later: true, rd: false, production: true, farm: true, log: true },
+      collapsedPanels: { later: true, rd: true, production: true, farm: true, log: false },
       quietMode: false,
       reducedMotion: false,
     },

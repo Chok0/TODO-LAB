@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .vite/
-src-tauri/target/
 *.log
 .DS_Store
+
+# artefacts de build Tauri
+src-tauri/target/
+src-tauri/gen/

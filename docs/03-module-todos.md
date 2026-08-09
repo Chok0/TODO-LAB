@@ -130,7 +130,7 @@ Chaque règle = `{ pattern: RegExp, field, resolve(match) => value, confidence }
 
 ## 6. UI de la colonne (détail dans `11-ui-ux.md`)
 
-- Colonne ancrée à droite ; sections : quick-add, « Aujourd'hui », « Cette semaine », « Plus tard », panneau Habitudes (replié par défaut).
+- Colonne ancrée à droite ; sections : quick-add, « Aujourd'hui » (inclut les tâches sans échéance), « Cette semaine », « Plus tard », panneau Habitudes (replié par défaut).
 - Code couleur double : **teinte de fond** = catégorie (perso/pro) ; **bordure gauche / icône** = type de récurrence (ponctuelle / fixe / flexible / abstinence / compteur).
 - Chaque section est individuellement repliable (principe transversal du projet).
 

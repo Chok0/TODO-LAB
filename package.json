@@ -8,16 +8,19 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json --threshold error",
+    "check": "svelte-check --tsconfig tsconfig.json --threshold error",
     "test": "vitest run",
     "test:watch": "vitest",
     "sim": "tsx scripts/sim.ts",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "verify": "npm run check && npm test && npm run test:rust && npm run build"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tauri-apps/cli": "^2.1.0",
     "@types/node": "^26.2.0",
+    "playwright": "^1.62.1",
     "svelte": "^5.19.0",
     "svelte-check": "^4.1.4",
     "tsx": "^4.19.2",

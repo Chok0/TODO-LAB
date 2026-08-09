@@ -1,0 +1,49 @@
+/**
+ * Design tokens (docs/12 §2). TOUTES les couleurs de l'app viennent d'ici :
+ * aucun hexadécimal ne doit apparaître dans un composant.
+ */
+
+:root {
+  /* fond & texte — widget sombre translucide */
+  --bg-0: #14181d;
+  --bg-1: #1c2229;
+  --bg-2: #242c35;
+  --text-0: #e8e6e3;
+  --text-dim: #9aa3ab;
+  --line: #313b46;
+
+  /* modules */
+  --lab: #2a9d8f;
+  --lab-steel: #5c6b73;
+  --farm: #588157;
+  --farm-soil: #6b5844;
+  --legal: #3a6ea5;
+  --corrupt: #a4243b;
+  --corrupt-gold: #b08d3e;
+  --broker: #8d7fa8;
+
+  /* catégories todo */
+  --perso: #c96f4a;
+  --pro: #4a7ba6;
+
+  /* sémantique */
+  --ok: #7fb069;
+  --warn: #d9a441;
+  --danger: #a4243b;
+  --energy: #e9c46a;
+  --kess: #b08d3e;
+
+  /* géométrie */
+  --radius: 6px;
+  --radius-sm: 3px;
+  --space: 8px;
+  --shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+
+  /* typographie */
+  --font-ui: 'Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-letter: 'Special Elite', Georgia, 'Times New Roman', serif;
+
+  /* opacité du fond, pilotée par les réglages */
+  --window-opacity: 0.94;
+}
