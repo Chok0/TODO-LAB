@@ -12,12 +12,25 @@
   "app": {
     "windows": [
       {
-        "label": "main",
+        "label": "todo",
         "title": "Labo Kessler",
         "width": 380,
         "height": 900,
         "minWidth": 320,
         "maxWidth": 480,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": true,
+        "shadow": false
+      },
+      {
+        "label": "atelier",
+        "title": "Labo Kessler — Atelier",
+        "width": 1200,
+        "height": 240,
+        "minHeight": 200,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
@@ -32,7 +45,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "appimage", "nsis", "dmg"],
+    "targets": [
+      "deb",
+      "appimage",
+      "nsis",
+      "dmg"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
