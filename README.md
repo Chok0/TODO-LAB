@@ -6,29 +6,51 @@
 
 ---
 
-## Lancer le jeu
+## Installer le jeu
+
+Trois voies, de la plus simple à la plus complète.
+
+### 1. Un seul fichier HTML — rien à installer
+
+```bash
+npm install && npm run build:single
+```
+
+Produit `dist-single/labo-kessler.html` : **283 Ko, un seul fichier, aucune dépendance réseau**. Double-cliquez, le jeu s'ouvre dans votre navigateur et se sauvegarde dedans. Pratique pour essayer, ou pour emporter la partie sur une clé USB.
+
+### 2. Un vrai installeur (.exe, .dmg, .AppImage) — sans rien installer non plus
+
+C'est GitHub qui compile. Tauri ne sait pas fabriquer un `.exe` depuis Linux ou macOS : chaque plateforme doit se construire sur sa propre machine, et le workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) s'en charge sur les quatre à la fois.
+
+**Au choix :**
+
+- **Bouton** — onglet *Actions* du dépôt → *Installeurs* → *Run workflow*. À la fin du run (~10 min), les installeurs sont en bas de la page, dans *Artifacts*.
+- **Tag de version** — `git tag v1.0.0 && git push origin v1.0.0` crée en plus une *release* brouillon avec les installeurs attachés.
+
+Vous récupérez : `.exe` (installeur Windows NSIS) et `.msi`, `.dmg` pour macOS Intel et Apple Silicon, `.deb` et `.AppImage` pour Linux.
+
+> Les installeurs ne sont pas signés. Windows affichera un écran SmartScreen : *Informations complémentaires → Exécuter quand même*. macOS demandera un clic droit → *Ouvrir* la première fois. Signer coûte un certificat payant chez Microsoft et Apple — inutile pour un usage personnel.
+
+### 3. Compiler soi-même
 
 ```bash
 npm install
-```
-
-### En application desktop (Tauri)
-
-```bash
 npm run tauri dev     # développement, rechargement à chaud
-npm run tauri build   # produit un binaire + installeurs dans src-tauri/target/release/bundle/
+npm run tauri build   # installeurs dans src-tauri/target/release/bundle/
 ```
 
-Prérequis Linux : `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf`.
-Sur macOS et Windows, la chaîne Rust standard suffit ([prérequis Tauri](https://tauri.app/start/prerequisites/)).
+Nécessite [Node](https://nodejs.org) et [Rust](https://rustup.rs). Sous Windows, WebView2 est déjà présent sur Windows 10/11. Sous Linux : `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf`. Détail : [prérequis Tauri](https://tauri.app/start/prerequisites/).
 
-### Dans un navigateur (sans Rust)
+Pour développer sans toucher à Rust : `npm run dev` ouvre le jeu sur `http://localhost:5173`. Il est **entièrement jouable ainsi** — seules les fonctions de coque manquent (fenêtre transparente, barre système, notifications).
 
-```bash
-npm run dev           # http://localhost:5173
-```
+### Où vit la sauvegarde
 
-Le jeu est **entièrement jouable ainsi** : la sauvegarde bascule automatiquement sur le stockage du navigateur. Seules les fonctions de coque manquent (fenêtre transparente, barre système, notifications).
+| | |
+|---|---|
+| Application desktop | `%APPDATA%/fr.kessler.labo/save/` (Windows), `~/Library/Application Support/fr.kessler.labo/save/` (macOS), `~/.local/share/fr.kessler.labo/save/` (Linux) |
+| Navigateur / fichier HTML | stockage local du navigateur |
+
+Dans les deux cas, *Réglages → Exporter la sauvegarde* produit un `.json` réimportable ailleurs.
 
 ## Vérifier
 
