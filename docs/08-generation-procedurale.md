@@ -77,7 +77,7 @@ Table des valeurs : `05` §2. Rendement : `round(baseYield × modMéthode × (1 
 
 **PNJ porteurs (3)** : Voss / Coles / Reyes — contraints par déclencheur (une inspection ne peut pas être portée par Coles).
 
-**Coûts de base (par gravité)** : `coût_base(g) = 30 × 2^(g−1)` ₭ (30/60/120), modulé par les règles de `06` §3.
+**Coûts de base (par gravité)** : `coût_base(g) = max(30 × 2^(g−1), 2 % × g × richesse cumulée)` ₭ — forfait plancher 30/60/120 relevé à proportion de la richesse (`06` §3).
 
 ### Assemblage
 

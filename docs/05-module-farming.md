@@ -12,7 +12,7 @@ Fournit les intrants du labo. Boucle : **plantation → croissance (idle, durée
 
 | Template | Graine (₭) | Croissance | Récoltes/cycle | PA produit | Tag Fin | Déblocage |
 |---|---|---|---|---|---|---|
-| Médicinale | 5 (3 offertes au départ, DEC-10) | 20 min | 2 | PA_MED | bénéfique | — |
+| Médicinale | 5 (3 offertes au départ, DEC-10) | 20 min | 3 | PA_MED | bénéfique | — |
 | Industrielle | 8 | 35 min | 2 | PA_IND | neutre | Distillateur construit |
 | Récréative | 12 | 45 min | 3 | PA_REC | neutre | Synthétiseur construit |
 | Toxique | 25 | 60 min | 2 | PA_TOX | nocif | Clé de corruption 1 |
@@ -23,7 +23,7 @@ Le rendement affiché est le rendement de base, modulé par la méthode et la de
 
 | | Agroécologie (propre) | Monoculture intensive (dégradant) |
 |---|---|---|
-| Coût graine | ×1.5 | ×1 |
+| Coût graine | ×1.2 | ×1 |
 | Durée de croissance | +20 % | nominale |
 | Rendement | nominal | +50 % |
 | Dette environnementale | **−1 %** par récolte (régénère, plancher 0) | **+2 %** par récolte |

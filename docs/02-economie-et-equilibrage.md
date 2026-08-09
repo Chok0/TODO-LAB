@@ -120,7 +120,7 @@ Sans convoyeur, chaque cycle doit être relancé manuellement (clic). Avec convo
 | | Propre / Agroécologie | Dégradant / Intensif |
 |---|---|---|
 | **Labo** | Durée nominale, 0 pollution | Durée −25 %, +0.5 % pollution d'atelier par cycle |
-| **Farming** | Coût graine ×1.5, durée +20 %, dette −1 %/récolte | Rendement +50 %, dette +2 %/récolte |
+| **Farming** | Coût graine ×1.2, durée +20 %, dette −1 %/récolte | Rendement +50 %, dette +2 %/récolte |
 
 - Pollution d'atelier : les ventes du labo sont multipliées par `(1 − POLLUTION)`. Nettoyage : 5 EN → −5 % de pollution.
 - Dette environnementale (par parcelle) : rendement de la parcelle × `(1 − DEBT_ENV)`. Jachère : parcelle en pause, −2 %/heure.
@@ -140,7 +140,7 @@ Modificateurs de bande d'alignement :
 
 | Bande | Ventes légales | Ventes illégales | Autres effets |
 |---|---|---|---|
-| Coopérative (score ≥ +30) | +10 % | prix nominal, probabilité d'événement ×1.4 | Subventions accessibles |
+| Coopérative (score ≥ +30) | +25 % | prix nominal, probabilité d'événement ×1.4 | Subventions accessibles |
 | Neutre / Courtier (−30 < score < +30) | nominal | nominal | Commission 15 % sur tout ; pertes de réputation ×1.5 lors des événements |
 | Zone (score ≤ −30) | −10 % | +10 % | Subventions inaccessibles |
 
@@ -150,11 +150,11 @@ Subventions Coopérative : requiert `REP_COOP ≥ 20` et Remède premium débloq
 
 | Clé | Prix (₭) | Taxe ajoutée | Débloque |
 |---|---|---|---|
-| Clé 1 | 100 | +3 % | Extrait brut, graine toxique |
-| Clé 2 | 400 | +4 % | Composé actif |
-| Clé 3 | 1600 | +5 % | Produit raffiné |
+| Clé 1 | 100 | +8 % | Extrait brut, graine toxique |
+| Clé 2 | 400 | +12 % | Composé actif |
+| Clé 3 | 1600 | +15 % | Produit raffiné |
 
-Taxe cumulée maximale V1 : 12 %. La taxe est permanente (irréversible en V1) et s'applique à **toutes** les ventes — c'est le prix payé en vitesse long terme.
+Taxe cumulée maximale V1 : 35 %. La taxe est permanente (irréversible en V1) et s'applique à **toutes** les ventes — c'est le prix payé en vitesse long terme.
 
 Événements ponctuels : après achat de la Clé 1, chaque cycle de production illégale terminé tire un événement avec `p = 1/17` (moyenne ~15-20 cycles, cf. aversion à la perte §12), cooldown minimal de 3 cycles entre deux événements, jamais deux fois le même déclencheur consécutivement.
 

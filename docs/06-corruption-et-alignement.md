@@ -17,11 +17,11 @@ Achat unique et permanent (₭), visible seulement après la recherche Synthèse
 
 | Clé | Prix | Taxe permanente ajoutée | Débloque |
 |---|---|---|---|
-| Clé 1 — « Laissez-passer » | 100 ₭ | +3 % | Recette Extrait brut, graine toxique |
-| Clé 2 — « Protection » | 400 ₭ | +4 % | Recette Composé actif |
-| Clé 3 — « Filière » | 1600 ₭ | +5 % | Recette Produit raffiné |
+| Clé 1 — « Laissez-passer » | 100 ₭ | +8 % | Recette Extrait brut, graine toxique |
+| Clé 2 — « Protection » | 400 ₭ | +12 % | Recette Composé actif |
+| Clé 3 — « Filière » | 1600 ₭ | +15 % | Recette Produit raffiné |
 
-La **corruption régulière** est la somme des taxes des clés achetées (max 12 % en V1), appliquée à toutes les ventes, pour toujours (`02` §9). Le joueur paye en **vitesse long terme** — sa courbe s'aplatit durablement. L'UI l'affiche comme une ligne permanente dans le détail des prix, jamais comme une pénalité ponctuelle.
+La **corruption régulière** est la somme des taxes des clés achetées (max 35 % en V1), appliquée à toutes les ventes, pour toujours (`02` §9). Le joueur paye en **vitesse long terme** — sa courbe s'aplatit durablement. L'UI l'affiche comme une ligne permanente dans le détail des prix, jamais comme une pénalité ponctuelle.
 
 ## 3. Corruption événementielle
 
@@ -42,7 +42,7 @@ La **corruption régulière** est la somme des taxes des clés achetées (max 12
 
 | Mode | Coût | Conséquence narrative | Effet alignement |
 |---|---|---|---|
-| **Argent** | `coût_base(gravité)` ₭ = 30 × 2^(gravité−1), soit 30/60/120 (cher, immédiat, indolore) | Lettre de quittance sèche, rien ne ressurgit | 0 |
+| **Argent** | `max(30 × 2^(gravité−1), 2 % × gravité × richesse cumulée)` ₭ — le forfait sert de plancher, la part de richesse empêche l'incident de devenir dérisoire en fin de partie | Lettre de quittance sèche, rien ne ressurgit | 0 |
 | **Réputation** | −10 × gravité sur la réputation de la faction du PNJ | Dette narrative : le PNJ « s'en souviendra » — module le ton des lettres futures | −1 |
 | **Service** | Contrat forcé : livrer `X` produits en `Y` heures (X, Y selon gravité) | Crée une **faveur due** ; échec du contrat = saisie (perte du stock de PA + produits en cours) | −2 |
 
@@ -74,7 +74,7 @@ Registre persistant `{pnj, origine, date, remboursée}`. Les faveurs non rembour
 
 | Trajectoire | Condition | Économie | Registre narratif |
 |---|---|---|---|
-| **Good — Coopérative** | score ≥ +30 | Ventes légales +10 %, événements ×1.4, subventions | Reconnaissance, réhabilitation de l'atelier familial ; V2 : fin « référence légitime » |
+| **Good — Coopérative** | score ≥ +30 | Ventes légales +25 %, événements ×1.4, subventions | Reconnaissance, réhabilitation de l'atelier familial ; V2 : fin « référence légitime » |
 | **Opportuniste — Courtier** | −30 < score < +30 | Accès aux deux marchés mais commission 15 % sur tout ; pertes de réputation ×1.5 aux événements | Pragmatique, sans allégeance ; V2 : fin « ni un empire, ni une légende — un survivant » |
 | **Evil — Zone** | score ≤ −30 | Ventes illégales +10 %, légales −10 %, subventions inaccessibles | Ascension rapide, tension permanente ; V2 : fin binaire empire consolidé / saisie totale |
 
@@ -114,7 +114,7 @@ Matrice de texture, calculée à chaque production terminée :
 
 ## 7. Scénarios de test (obligatoires)
 
-1. Achat Clé 1 puis Clé 2 : taxe 7 %, appliquée aux ventes légales comme illégales.
+1. Achat Clé 1 puis Clé 2 : taxe 20 %, appliquée aux ventes légales comme illégales.
 2. 17 cycles illégaux avec RNG seedé : l'événement tombe au cycle prédit par la seed ; cooldown respecté ; déclencheur suivant ≠ précédent.
 3. Événement payé en service, contrat 5 Extraits bruts / 12 h : produits retenus au lieu d'être vendus, contrat honoré → REP_ZONE +5, faveur soldée.
 4. Contrat échoué : stock de PA et productions en cours saisis, REP −15, lettre de conséquence débloquée.
