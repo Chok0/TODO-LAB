@@ -1,5 +1,9 @@
 # 13 — Roadmap et stratégie de test
 
+> **Statut : les 6 goals sont livrés.** L'état de recette détaillé — ce qui a été
+> vérifié, comment, et ce qui reste à tester sur une machine de bureau réelle —
+> est dans [`qa-v1.md`](qa-v1.md).
+
 Séquence de goals pour l'agent d'implémentation. Chaque goal se termine sur une **condition vérifiable** (tests qui passent, sortie console, capture) — jamais un critère flou. Un goal n'est pas terminé tant que ses critères ne sont pas démontrés.
 
 ## 0. Definition of Done transversale (tous les goals)

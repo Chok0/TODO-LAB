@@ -12,7 +12,8 @@ import { freshSeed } from '../game-logic/rng';
 import { currentBand, unreadLetters, readyPlots } from '../game-logic/selectors';
 import { dayKey } from '../game-logic/time';
 import { enforceInvariants } from '../data/migrations';
-import { loadGame, saveGame, serialize, deserialize } from '../data/save';
+import { isTauri, loadGame, saveGame, serialize, deserialize } from '../data/save';
+import { groupTodos } from '../game-logic/todos/views';
 import type { GameState } from '../data/schema';
 
 // ------------------------------------------------------------------- stores
@@ -211,6 +212,22 @@ export async function saveNow(): Promise<void> {
   }
 }
 
+/** Notification système des échéances du jour, à l'ouverture (docs/01 §6). */
+async function notifyDueToday(state: GameState): Promise<void> {
+  if (!isTauri()) return;
+  const due = groupTodos(state, Date.now()).today.length;
+  if (due === 0) return;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('notify', {
+      title: 'Labo Kessler',
+      body: due === 1 ? 'Une tâche vous attend aujourd\'hui.' : `${due} tâches vous attendent aujourd'hui.`,
+    });
+  } catch {
+    /* notifications refusées ou indisponibles : sans conséquence */
+  }
+}
+
 // ------------------------------------------------------------ cycle de vie
 
 export async function initialize(): Promise<void> {
@@ -233,6 +250,7 @@ export async function initialize(): Promise<void> {
   tick();
   enforceInvariants(get(game), false);
   ready.set(true);
+  void notifyDueToday(get(game));
 
   if (tickTimer) clearInterval(tickTimer);
   tickTimer = setInterval(tick, BALANCE.tickInterval);
