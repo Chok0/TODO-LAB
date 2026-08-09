@@ -18,18 +18,20 @@ npm install && npm run build:single
 
 Produit `dist-single/labo-kessler.html` : **283 Ko, un seul fichier, aucune dépendance réseau**. Double-cliquez, le jeu s'ouvre dans votre navigateur et se sauvegarde dedans. Pratique pour essayer, ou pour emporter la partie sur une clé USB.
 
-### 2. Un vrai installeur (.exe, .dmg, .AppImage) — sans rien installer non plus
+### 2. L'installeur Windows (.exe) — sans rien installer non plus
 
-C'est GitHub qui compile. Tauri ne sait pas fabriquer un `.exe` depuis Linux ou macOS : chaque plateforme doit se construire sur sa propre machine, et le workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) s'en charge sur les quatre à la fois.
+C'est GitHub qui compile : Tauri ne sait pas fabriquer un `.exe` depuis Linux ou macOS, chaque plateforme doit se construire sur sa propre machine.
 
 **Au choix :**
 
-- **Bouton** — onglet *Actions* du dépôt → *Installeurs* → *Run workflow*. À la fin du run (~10 min), les installeurs sont en bas de la page, dans *Artifacts*.
+- **Bouton** — onglet *Actions* du dépôt → *Installeur Windows* → *Run workflow*. À la fin du run (~8 min), le `.exe` et le `.msi` se téléchargent en bas de la page, dans *Artifacts*.
 - **Tag de version** — `git tag v1.0.0 && git push origin v1.0.0` crée en plus une *release* brouillon avec les installeurs attachés.
 
-Vous récupérez : `.exe` (installeur Windows NSIS) et `.msi`, `.dmg` pour macOS Intel et Apple Silicon, `.deb` et `.AppImage` pour Linux.
+Les vérifications (typage, tests) tournent dans un job **séparé qui ne bloque pas la fabrication** : un test rouge se voit, mais ne vous prive pas de votre installeur.
 
-> Les installeurs ne sont pas signés. Windows affichera un écran SmartScreen : *Informations complémentaires → Exécuter quand même*. macOS demandera un clic droit → *Ouvrir* la première fois. Signer coûte un certificat payant chez Microsoft et Apple — inutile pour un usage personnel.
+> L'installeur n'est pas signé. Windows affichera un écran SmartScreen au premier lancement : *Informations complémentaires → Exécuter quand même*. Signer demande un certificat payant chez Microsoft — inutile pour un usage personnel.
+
+**macOS et Linux** vivent dans un second workflow, [`installeur-autres-plateformes.yml`](.github/workflows/installeur-autres-plateformes.yml), qui **ne se déclenche jamais tout seul** — ni sur tag, ni sur push. Il ne tourne que si vous cliquez dessus. Supprimez le fichier si vous êtes sûr de ne jamais en avoir besoin : le workflow Windows est indépendant.
 
 ### 3. Compiler soi-même
 
