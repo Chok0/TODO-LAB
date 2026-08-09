@@ -29,7 +29,30 @@ C'est GitHub qui compile : Tauri ne sait pas fabriquer un `.exe` depuis Linux ou
 
 Les vérifications (typage, tests) tournent dans un job **séparé qui ne bloque pas la fabrication** : un test rouge se voit, mais ne vous prive pas de votre installeur.
 
-> L'installeur n'est pas signé. Windows affichera un écran SmartScreen au premier lancement : *Informations complémentaires → Exécuter quand même*. Signer demande un certificat payant chez Microsoft — inutile pour un usage personnel.
+L'installeur s'installe **pour votre compte utilisateur seul** (`installMode: currentUser`) : pas d'invite administrateur, rien dans `Program Files`, rien qui touche les autres comptes de la machine.
+
+#### Windows bloque l'installeur — c'est attendu
+
+L'installeur n'est **pas signé** : signer demande un certificat payant renouvelé chaque année, disproportionné pour un projet personnel. Windows ne sait donc pas qui l'a produit, et un fichier téléchargé quelques dizaines de fois n'a aucune réputation. Il vous met en garde par principe, pas parce qu'il a trouvé quelque chose.
+
+Deux écrans différents, à ne pas confondre :
+
+| Ce que vous voyez | Ce que ça veut dire | Quoi faire |
+|---|---|---|
+| Écran **bleu**, « Windows a protégé votre ordinateur », *éditeur inconnu* | SmartScreen : avertissement de réputation. Aucune analyse n'a rien trouvé. | *Informations complémentaires* → *Exécuter quand même* |
+| Bandeau **rouge**, « Menace trouvée », fichier mis en quarantaine, nom de virus affiché | Détection antivirus réelle — ou faux positif | Ne passez pas outre à l'aveugle : vérifiez l'empreinte (ci-dessous) avant tout |
+
+**Vérifier que le fichier est bien celui que GitHub a compilé.** Le workflow imprime l'empreinte SHA-256 de chaque installeur dans son journal (étape *Empreintes SHA-256*). Chez vous :
+
+```powershell
+Get-FileHash .\labo-kessler_1.0.0_x64-setup.exe -Algorithm SHA256
+```
+
+Si les deux chaînes sont identiques, le fichier est exactement celui que les serveurs de GitHub ont construit à partir du code de ce dépôt — il n'a été ni altéré en route, ni fabriqué ailleurs. Pour un second avis, [VirusTotal](https://www.virustotal.com) accepte le fichier ou son empreinte.
+
+**Ce que le programme fait, et ce qu'il ne fait pas.** Il ouvre deux fenêtres, pose une icône dans la barre système, affiche des notifications, et écrit un fichier JSON de sauvegarde dans `%APPDATA%\fr.kessler.labo\save\`. C'est tout. Il ne **communique avec rien** : six dépendances Rust en tout ([`src-tauri/Cargo.toml`](src-tauri/Cargo.toml) — tauri, trois greffons officiels pour l'instance unique / les notifications / les dialogues de fichier, et serde pour lire le JSON), donc aucun greffon réseau, aucun updater, aucune télémétrie ; et la politique de sécurité de la fenêtre (`csp` dans [`tauri.conf.json`](src-tauri/tauri.conf.json)) interdit à l'interface toute connexion sortante. Les permissions accordées à l'interface sont listées et minimales : [`src-tauri/capabilities/default.json`](src-tauri/capabilities/default.json) — fenêtre, notifications, ouverture/enregistrement de fichier. Rien sur le système de fichiers hors du dossier de sauvegarde, rien sur le shell, rien sur le réseau.
+
+**Si vous préférez ne pas installer du tout** : le fichier HTML unique (voie 1 ci-dessus) est un simple document, sans exécutable, et le jeu y est complet — seules manquent les fonctions de coque (fenêtres ancrées, barre système, notifications).
 
 **macOS et Linux** vivent dans un second workflow, [`installeur-autres-plateformes.yml`](.github/workflows/installeur-autres-plateformes.yml), qui **ne se déclenche jamais tout seul** — ni sur tag, ni sur push. Il ne tourne que si vous cliquez dessus. Supprimez le fichier si vous êtes sûr de ne jamais en avoir besoin : le workflow Windows est indépendant.
 
@@ -53,6 +76,21 @@ Pour développer sans toucher à Rust : `npm run dev` ouvre le jeu sur `http://l
 | Navigateur / fichier HTML | stockage local du navigateur |
 
 Dans les deux cas, *Réglages → Exporter la sauvegarde* produit un `.json` réimportable ailleurs.
+
+### Désinstaller
+
+*Paramètres → Applications → Applications installées → **Labo Kessler** → Désinstaller.* Pas d'invite administrateur : l'installation appartient à votre compte. L'`uninstall.exe` posé dans le dossier d'installation fait exactement la même chose.
+
+Quittez d'abord l'application par la barre système (*clic droit sur l'icône → Quitter*) : fenêtres masquées, elle tourne toujours, et le désinstalleur bute sur les fichiers verrouillés.
+
+La désinstallation retire le programme, **pas vos données** — c'est volontaire : réinstaller retrouve la partie. Deux dossiers survivent, à supprimer à la main pour effacer toute trace :
+
+| Dossier | Contenu |
+|---|---|
+| `%APPDATA%\fr.kessler.labo\` | la sauvegarde et ses trois copies de secours |
+| `%LOCALAPPDATA%\fr.kessler.labo\` | le cache WebView2 de la fenêtre |
+
+Collez `%APPDATA%\fr.kessler.labo` dans la barre d'adresse de l'Explorateur pour y aller directement. **Avant de supprimer**, si la partie compte : *Réglages → Exporter la sauvegarde* met le `.json` où vous voulez, et *Importer* le relit plus tard — y compris dans la version navigateur.
 
 ## Vérifier
 

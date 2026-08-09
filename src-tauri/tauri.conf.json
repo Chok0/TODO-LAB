@@ -58,6 +58,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
     "category": "Productivity",
     "shortDescription": "Todo list gamifiée en widget desktop",
     "longDescription": "Chaque tâche accomplie alimente un atelier de chimie hérité dans la Zone Franche de Kessler."
