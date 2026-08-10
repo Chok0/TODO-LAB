@@ -14,7 +14,7 @@ import { BALANCE } from './balance';
 import { emit, type Ctx } from './core';
 import { checkContract, buyKey, debtRollover, maybeOffer, repayDebt, resolveEvent } from './corruption';
 import type { Effect } from './effects';
-import { advanceFarm, buyPlot, harvest, plant, preventSoftlock, setFallow } from './farming';
+import { advanceFarm, buyPlot, buySupply, harvest, plant, rolloverSupply, setFallow } from './farming';
 import {
   advanceLab,
   assignRecipe,
@@ -126,6 +126,13 @@ export function applyAction(state: GameState, action: Action, now: Timestamp, rn
       cleanLab(draft, ctx);
       break;
 
+    // ------------------------------------------------------- fournisseur
+    case 'BuySupply':
+      if (!buySupply(draft, ctx, action.plant, action.amount)) {
+        emit(ctx, { kind: 'blocked', reason: 'Quota du jour atteint ou fonds insuffisants' });
+      }
+      break;
+
     // ----------------------------------------------------------- farming
     case 'BuyPlot':
       buyPlot(draft, ctx);
@@ -187,7 +194,7 @@ function dailyRollover(draft: GameState, ctx: Ctx, midnight: Timestamp): void {
   rolloverTodos(draft, ctx, midnight);
   rolloverAlignment(draft, ctx, midnight);
   debtRollover(draft, ctx, midnight);
-  preventSoftlock(draft, ctx);
+  rolloverSupply(draft);
   rolloverNarrative(draft, ctx, midnight);
   draft.stats.daysPlayed += 1;
   draft.meta.lastDayProcessed = dayKey(midnight);

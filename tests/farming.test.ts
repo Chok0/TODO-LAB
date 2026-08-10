@@ -1,29 +1,36 @@
 /** Scénarios obligatoires du farming (docs/05 §8). */
 
 import { describe, expect, it } from 'vitest';
-import { advance, doAct, give, HOUR, MIN, newGame } from './helpers';
+import { advance, doAct, give, HOUR, newGame, withFarm } from './helpers';
 import { computeYield } from '../src/game-logic/farming';
-import { isPlantUnlocked, seedCost } from '../src/game-logic/selectors';
+import {
+  isFarmUnlocked,
+  isPlantUnlocked,
+  isSupplyOpen,
+  seedCost,
+  supplyPrice,
+  supplyRemaining,
+} from '../src/game-logic/selectors';
 import type { GameState } from '../src/data/schema';
 
 const plot = (s: GameState, i = 0) => s.farm.plots[i];
 
 function farmGame(): GameState {
-  return give(newGame(), { energy: 200, kess: 500 });
+  return withFarm(give(newGame(), { kess: 700 }));
 }
 
 describe('1 — plantation médicinale intensive', () => {
-  it('mûrit en 20 min, rend 3 unités et alourdit la dette de 2 %', () => {
+  it('mûrit en 3 h, rend 5 unités et alourdit la dette de 2 %', () => {
     let s = farmGame();
     s = doAct(s, { type: 'Plant', plotId: 'plot-1', plant: 'medicinal', method: 'intensive' });
 
     const growing = plot(s).state;
     expect(growing.kind).toBe('growing');
     if (growing.kind === 'growing') {
-      expect(growing.endsAt - growing.startedAt).toBe(20 * MIN);
+      expect(growing.endsAt - growing.startedAt).toBe(3 * HOUR);
     }
 
-    s = advance(s, 20 * MIN);
+    s = advance(s, 3 * HOUR);
     const ready = plot(s).state;
     expect(ready.kind).toBe('ready');
     if (ready.kind === 'ready') expect(ready.yield).toBe(5); // round(3 × 1,5 × 1)
@@ -42,7 +49,7 @@ describe('2 — rendement sous dette', () => {
     let s = farmGame();
     s.farm.plots[0].envDebt = 0.3;
     s = doAct(s, { type: 'Plant', plotId: 'plot-1', plant: 'medicinal', method: 'intensive' });
-    s = advance(s, 20 * MIN);
+    s = advance(s, 3 * HOUR);
     s = doAct(s, { type: 'Harvest', plotId: 'plot-1' });
     expect(s.resources.harvest_med).toBe(3);
     expect(plot(s).envDebt).toBeCloseTo(0.32, 5);
@@ -50,7 +57,7 @@ describe('2 — rendement sous dette', () => {
 });
 
 describe('3 — agroécologie', () => {
-  it('coûte 1,5× la graine, dure 20 % plus longtemps et régénère la parcelle', () => {
+  it('coûte 1,2× la graine, dure 20 % plus longtemps et régénère la parcelle', () => {
     let s = farmGame();
     s.farm.seedStock = {}; // stock offert épuisé
     s.farm.plots[0].envDebt = 0.1;
@@ -61,9 +68,9 @@ describe('3 — agroécologie', () => {
     expect(s.resources.kess).toBe(before - 6);
 
     const growing = plot(s).state;
-    if (growing.kind === 'growing') expect(growing.endsAt - growing.startedAt).toBe(24 * MIN);
+    if (growing.kind === 'growing') expect(growing.endsAt - growing.startedAt).toBe(3.6 * HOUR);
 
-    s = advance(s, 24 * MIN);
+    s = advance(s, 3.6 * HOUR);
     s = doAct(s, { type: 'Harvest', plotId: 'plot-1' });
     expect(plot(s).envDebt).toBeCloseTo(0.09, 5);
   });
@@ -88,7 +95,7 @@ describe('5 — croissance hors ligne', () => {
   it("n'est jamais plafonnée par l'absence", () => {
     let s = farmGame();
     s = doAct(s, { type: 'Plant', plotId: 'plot-1', plant: 'medicinal', method: 'agro' });
-    s = advance(s, 8 * HOUR); // bien au-delà des 24 min de croissance
+    s = advance(s, 12 * HOUR); // bien au-delà des 3,6 h de croissance
     expect(plot(s).state.kind).toBe('ready');
   });
 });
@@ -113,17 +120,17 @@ describe('6 — graine toxique verrouillée', () => {
 
 describe('parcelles', () => {
   it('démarre à 2 parcelles et suit la table de prix, plafonnée à 5', () => {
-    let s = give(newGame(), { kess: 5000 });
+    let s = withFarm(give(newGame(), { kess: 5000 }));
     expect(s.farm.plots).toHaveLength(2);
 
     s = doAct(s, { type: 'BuyPlot' });
     expect(s.farm.plots).toHaveLength(3);
-    expect(s.resources.kess).toBe(4900);
+    expect(s.resources.kess).toBe(4600);
 
     s = doAct(s, { type: 'BuyPlot' });
     s = doAct(s, { type: 'BuyPlot' });
     expect(s.farm.plots).toHaveLength(5);
-    expect(s.resources.kess).toBe(4050); // 5000 − 100 − 250 − 600
+    expect(s.resources.kess).toBe(1900); // 5000 − 400 − 900 − 1800
 
     s = doAct(s, { type: 'BuyPlot' });
     expect(s.farm.plots).toHaveLength(5); // plafond V1
@@ -135,5 +142,96 @@ describe('parcelles', () => {
     s = doAct(s, { type: 'Plant', plotId: 'plot-1', plant: 'medicinal', method: 'intensive' });
     expect(s.resources.kess).toBe(before);
     expect(s.farm.seedStock.medicinal).toBe(2);
+  });
+});
+
+describe('7 — la friche est verrouillée au départ', () => {
+  it("n'a aucune parcelle et refuse toute plantation avant la remise en culture", () => {
+    let s = give(newGame(), { kess: 5000 });
+    expect(isFarmUnlocked(s)).toBe(false);
+    expect(s.farm.plots).toHaveLength(0);
+
+    // même en fabriquant une parcelle de toutes pièces, le moteur refuse
+    s.farm.plots.push({ id: 'plot-1', envDebt: 0, state: { kind: 'empty' } });
+    const before = s.resources.kess;
+    s = doAct(s, { type: 'Plant', plotId: 'plot-1', plant: 'medicinal', method: 'intensive' });
+    expect(plot(s).state.kind).toBe('empty');
+    expect(s.resources.kess).toBe(before);
+  });
+
+  it('la recherche livre les parcelles et les premières graines', () => {
+    let s = give(newGame(), { kess: 5000 });
+    s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
+    s = doAct(s, { type: 'Research', tech: 'farm_bp' });
+
+    expect(isFarmUnlocked(s)).toBe(true);
+    expect(s.farm.plots).toHaveLength(2);
+    expect(s.farm.seedStock.medicinal).toBe(3);
+
+    s = doAct(s, { type: 'Plant', plotId: 'plot-1', plant: 'medicinal', method: 'agro' });
+    expect(plot(s).state.kind).toBe('growing');
+  });
+});
+
+/** L'étal n'ouvre qu'aux ateliers équipés : on monte donc l'extracteur d'abord. */
+function supplyGame(kess = 1000): GameState {
+  return doAct(give(newGame(), { kess }), { type: 'Research', tech: 'extractor_bp' });
+}
+
+describe('8 — le Fournisseur', () => {
+  it("reste fermé tant qu'aucune machine ne peut traiter la matière", () => {
+    let s = give(newGame(), { kess: 1000 });
+    expect(isSupplyOpen(s)).toBe(false);
+
+    s = doAct(s, { type: 'BuySupply', plant: 'medicinal', amount: 4 });
+    expect(s.resources.harvest_med).toBe(0);
+    expect(s.resources.kess).toBe(1000);
+
+    s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
+    expect(isSupplyOpen(s)).toBe(true);
+  });
+
+  it('vend des intrants contre des ₭, dans la limite du quota du jour', () => {
+    let s = supplyGame();
+    const unit = supplyPrice('medicinal');
+    const quota = supplyRemaining(s);
+    const purse = s.resources.kess;
+
+    s = doAct(s, { type: 'BuySupply', plant: 'medicinal', amount: 4 });
+    expect(s.resources.harvest_med).toBe(4);
+    expect(s.resources.kess).toBe(purse - 4 * unit);
+    expect(supplyRemaining(s)).toBe(quota - 4);
+
+    // au-delà du quota, l'achat est tronqué, jamais silencieusement dépassé
+    s = doAct(s, { type: 'BuySupply', plant: 'medicinal', amount: 999 });
+    expect(s.resources.harvest_med).toBe(quota);
+    expect(supplyRemaining(s)).toBe(0);
+
+    s = doAct(s, { type: 'BuySupply', plant: 'medicinal', amount: 1 });
+    expect(s.resources.harvest_med).toBe(quota); // rien de plus aujourd'hui
+  });
+
+  it('rend le quota à minuit', () => {
+    let s = supplyGame();
+    s = doAct(s, { type: 'BuySupply', plant: 'medicinal', amount: 5 });
+    expect(s.supply.boughtToday).toBe(5);
+
+    s = advance(s, 20 * HOUR); // franchit minuit
+    expect(s.supply.boughtToday).toBe(0);
+  });
+
+  it("ne vend que ce qu'on saurait cultiver — la toxique reste sous clé", () => {
+    let s = supplyGame(5000);
+    const purse = s.resources.kess;
+    s = doAct(s, { type: 'BuySupply', plant: 'toxic', amount: 2 });
+    expect(s.resources.harvest_tox).toBe(0);
+    expect(s.resources.kess).toBe(purse);
+  });
+
+  it('coûte toujours plus cher que de cultiver la même unité', () => {
+    for (const id of ['medicinal', 'industrial', 'recreational', 'toxic'] as const) {
+      const grown = seedCost(give(newGame(), {}), id, 'intensive') / 3;
+      expect(supplyPrice(id)).toBeGreaterThan(grown);
+    }
   });
 });

@@ -16,7 +16,6 @@
   import TodoEditor from './components/todo/TodoEditor.svelte';
   import SettingsPanel from './components/SettingsPanel.svelte';
   import Icon from './components/Icon.svelte';
-  import Toasts from './components/Toasts.svelte';
 
   import type { Todo } from './data/schema';
   import type { TodoDraft } from './game-logic/actions';
@@ -160,9 +159,6 @@
   <SettingsPanel on:close={() => (showSettings = false)} />
 {/if}
 
-{#if zone === 'atelier'}
-  <Toasts />
-{/if}
 
 <style>
   .single-column {
@@ -190,8 +186,9 @@
     height: 100%;
   }
 
+  /* le bandeau grandit quand un panneau s'y déploie, comme la vraie fenêtre */
   .preview-band {
-    flex: 0 0 240px;
+    flex: 0 0 auto;
     min-height: 240px;
   }
 

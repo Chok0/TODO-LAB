@@ -24,15 +24,16 @@ function parseArgs() {
 }
 
 const opts = parseArgs();
-const { state, rows, firstMk2, revenuePerDay } = runSimulation(opts.days, opts.seed, opts.strategy);
+const { state, rows, firstMk2, revenuePerDay, todoShare } = runSimulation(opts.days, opts.seed, opts.strategy);
 
 if (!opts.quiet) {
-  const header = ['J', 'EN', '₭', '₭ cumul', 'Mach/Mk2', 'R&D', 'Parc', 'Dette', 'Taxe', 'Align', 'Bande', 'Ltr'];
+  const header = ['J', '₭', '₭ cumul', 'Todos', 'Prod', 'Mach/Mk2', 'R&D', 'Parc', 'Dette', 'Taxe', 'Align', 'Bande', 'Ltr'];
   const cells = rows.map((r) => [
     String(r.day),
-    r.energy.toFixed(0),
     r.kess.toFixed(0),
     r.kessTotal.toFixed(0),
+    r.fromTodos.toFixed(0),
+    r.fromProd.toFixed(0),
     `${r.machines}/${r.mk2}`,
     String(r.research),
     String(r.plots),
@@ -53,6 +54,9 @@ if (!opts.quiet) {
 console.log('\n--- Bilan ---');
 console.log(`Kess cumulés          : ${state.stats.kessEarnedTotal.toFixed(0)} ₭`);
 console.log(`Revenu/jour (fin)     : ${revenuePerDay.toFixed(1)} ₭`);
+console.log(
+  `Origine des gains     : todos ${(todoShare * 100).toFixed(0)} % · production ${((1 - todoShare) * 100).toFixed(0)} %`,
+);
 console.log(`Ventes légales        : ${state.stats.salesLegal}`);
 console.log(`Ventes illégales      : ${state.stats.salesIllegal}`);
 console.log(`Cycles produits       : ${state.stats.cyclesCompleted}`);

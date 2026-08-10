@@ -25,11 +25,6 @@
 
   <div class="readouts">
   <div class="dials">
-    <div class="dial energy">
-      <Icon name="energy" size={15} />
-      <span class="value mono">{fmt(state.resources.energy)}</span>
-      <span class="unit tiny">EN</span>
-    </div>
     <div class="dial kess">
       <Icon name="kess" size={15} />
       <span class="value mono">{fmt(state.resources.kess)}</span>
@@ -113,10 +108,6 @@
 
   .unit {
     color: var(--text-dim);
-  }
-
-  .energy {
-    color: var(--energy);
   }
 
   .kess {

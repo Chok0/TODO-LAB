@@ -117,7 +117,43 @@ export function hasInputs(state: GameState, recipe: Recipe): boolean {
   return recipe.inputs.every((i) => (state.resources[i.resource] ?? 0) >= i.amount);
 }
 
+// -------------------------------------------------------------- fournisseur
+
+/**
+ * Prix d'une unité de récolte au Fournisseur. Il est dérivé du coût de la
+ * graine ramené à l'unité récoltée : acheter revient toujours à `markup` fois
+ * ce que coûterait la même unité cultivée (docs/05 §0).
+ */
+export function supplyPrice(id: PlantId): number {
+  const plant = getPlant(id);
+  const perUnit = plant.seedCost / Math.max(1, plant.baseYield);
+  return Math.max(BALANCE.supply.minPrice, Math.ceil(perUnit * BALANCE.supply.markup));
+}
+
+/**
+ * Le Fournisseur ne sert à rien sans machine pour traiter la matière : tant
+ * qu'aucune n'est montée, l'étal reste fermé plutôt que de laisser dépenser
+ * la mise de départ en récoltes inutilisables.
+ */
+export function isSupplyOpen(state: GameState): boolean {
+  return state.lab.machines.length > 0;
+}
+
+/** Ce que la Zone laisse passer aujourd'hui, parcelles comprises. */
+export function supplyQuota(state: GameState): number {
+  return BALANCE.supply.dailyQuota + state.farm.plots.length * BALANCE.supply.quotaPerPlot;
+}
+
+export function supplyRemaining(state: GameState): number {
+  return Math.max(0, supplyQuota(state) - state.supply.boughtToday);
+}
+
 // ------------------------------------------------------------------- farming
+
+/** La friche reste en jachère tant que la remise en culture n'est pas payée. */
+export function isFarmUnlocked(state: GameState): boolean {
+  return isTechResearched(state, 'farm_bp');
+}
 
 export function isPlantUnlocked(state: GameState, id: PlantId): boolean {
   const plant = getPlant(id);

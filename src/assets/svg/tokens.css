@@ -30,7 +30,7 @@
   --ok: #7fb069;
   --warn: #d9a441;
   --danger: #a4243b;
-  --energy: #e9c46a;
+  --supply: #e9c46a;
   --kess: #b08d3e;
 
   /* décor de l'atelier — un ancien atelier de lutherie : bois, acier, verre */
@@ -40,6 +40,9 @@
   --bench: #6b5844;
   --bench-top: #7d6850;
   --bench-dark: #4a3c2e;
+  --crate: #5c4a38;
+  --crate-top: #6d5943;
+  --crate-line: #3a2e23;
   --glass: #7fb0a8;
 
   /* géométrie */

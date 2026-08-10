@@ -19,12 +19,19 @@ const TODO_LABEL: &str = "todo";
 const ATELIER_LABEL: &str = "atelier";
 
 const TODO_WIDTH: f64 = 380.0;
+/// Hauteur au repos du bandeau : la scène, rien de plus.
 const ATELIER_HEIGHT: f64 = 240.0;
+/// Hauteur quand un panneau s'y déploie (recherche, production, courrier).
+/// Le bandeau grandit vers le HAUT : son bord bas ne bouge jamais, sinon il
+/// passerait sous la barre des tâches.
+const ATELIER_HEIGHT_OPEN: f64 = 560.0;
 /// En dessous, on renonce au bandeau plutôt que de produire un moignon.
 const MIN_ATELIER_WIDTH: f64 = 520.0;
 
 /// Cale les deux fenêtres sur la zone de travail de l'écran.
-fn dock_windows(app: &tauri::AppHandle) {
+/// `atelier_height` permet de recaler le bandeau à une autre hauteur sans
+/// déplacer son bord bas.
+fn dock_windows_with(app: &tauri::AppHandle, atelier_height: f64) {
     let Some(todo) = app.get_webview_window(TODO_LABEL) else {
         return;
     };
@@ -51,7 +58,7 @@ fn dock_windows(app: &tauri::AppHandle) {
 
     if let Some(atelier) = app.get_webview_window(ATELIER_LABEL) {
         let width = size.width - todo_width;
-        let height = ATELIER_HEIGHT.min(size.height);
+        let height = atelier_height.min(size.height);
         if width < MIN_ATELIER_WIDTH {
             let _ = atelier.hide();
         } else {
@@ -64,11 +71,44 @@ fn dock_windows(app: &tauri::AppHandle) {
     }
 }
 
+fn dock_windows(app: &tauri::AppHandle) {
+    dock_windows_with(app, ATELIER_HEIGHT);
+}
+
+/// Déploie (ou replie) le bandeau atelier. Un panneau de formulaire ne tient
+/// pas dans 240 px : plutôt que de le comprimer, la fenêtre elle-même s'ouvre
+/// vers le haut, puis retrouve sa hauteur de scène à la fermeture.
 #[tauri::command]
-fn set_always_on_top(app: tauri::AppHandle, flag: bool) -> Result<(), String> {
+fn set_atelier_expanded(app: tauri::AppHandle, expanded: bool) -> Result<(), String> {
+    dock_windows_with(
+        &app,
+        if expanded { ATELIER_HEIGHT_OPEN } else { ATELIER_HEIGHT },
+    );
+    Ok(())
+}
+
+/// Place les fenêtres dans la pile du bureau.
+///
+/// `desktop` — le défaut : les deux fenêtres restent SOUS les applications,
+/// posées sur le fond d'écran comme un widget. `normal` — fenêtres ordinaires.
+/// `top` — au-dessus de tout.
+#[tauri::command]
+fn set_window_layer(app: tauri::AppHandle, layer: String) -> Result<(), String> {
+    let (on_top, on_bottom) = match layer.as_str() {
+        "top" => (true, false),
+        "normal" => (false, false),
+        _ => (false, true),
+    };
     for label in [TODO_LABEL, ATELIER_LABEL] {
         if let Some(window) = app.get_webview_window(label) {
-            window.set_always_on_top(flag).map_err(|e| e.to_string())?;
+            // l'ordre compte : on relâche l'ancien ancrage avant de poser le nouveau
+            window.set_always_on_top(false).map_err(|e| e.to_string())?;
+            window.set_always_on_bottom(false).map_err(|e| e.to_string())?;
+            if on_top {
+                window.set_always_on_top(true).map_err(|e| e.to_string())?;
+            } else if on_bottom {
+                window.set_always_on_bottom(true).map_err(|e| e.to_string())?;
+            }
         }
     }
     Ok(())
@@ -134,7 +174,8 @@ pub fn run() {
             persist::load_save,
             persist::write_save,
             persist::read_backup,
-            set_always_on_top,
+            set_window_layer,
+            set_atelier_expanded,
             reset_window_position,
             notify,
         ])

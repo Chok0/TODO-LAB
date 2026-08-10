@@ -72,16 +72,18 @@ advanceTime(state: GameState, from: Timestamp, to: Timestamp, rng: RngStreams)
 | `load_save` | `() → Option<String>` | Lit `state.json` (ou `None` si premier lancement) |
 | `write_save` | `(json: String) → Result<()>` | Écriture atomique |
 | `read_backup` | `(n: u8) → Option<String>` | Récupération |
-| `set_always_on_top` | `(flag: bool)` | Toggle réglage |
-| `set_window_opacity` | `(alpha: f64)` | Réglage d'opacité (si supporté par l'OS, sinon no-op) |
+| `set_window_layer` | `(layer: "desktop" \| "normal" \| "top")` | Place les deux fenêtres dans la pile du bureau (DEC-15). `desktop` par défaut |
+| `set_atelier_expanded` | `(expanded: bool)` | Déploie le bandeau atelier vers le haut (240 → 560 px) le temps d'un panneau, bord bas figé |
+| `reset_window_position` | `()` | Recale les deux fenêtres sur la zone de travail |
 | `notify` | `(title, body)` | Notification système (échéances du jour à l'ouverture, V1) |
-| `export_save_dialog` / `import_save_dialog` | | Dialogues fichiers natifs |
 
 Événements Rust → TS : `tray://toggle-visibility`, `tray://quiet-mode`, `tray://quit`, `window://shown`. Plugins Tauri : `single-instance` (obligatoire — deux instances corrompraient la save), `notification`, `dialog`. Allowlist/capabilities Tauri réduite strictement à ces surfaces.
 
-## 7. Fenêtre et tray (DEC-01)
+## 7. Fenêtres et tray (DEC-12, DEC-15)
 
-- **Une fenêtre V1** : colonne droite. `decorations: false`, `transparent: true`, `skipTaskbar: true`, `alwaysOnTop: true` (toggleable), redimensionnable en largeur (320–480 px), hauteur = écran par défaut. Position/taille sauvegardées dans `settings`.
+- **Deux fenêtres** : `todo` (colonne droite, 380 px, hauteur utile) et `atelier` (bandeau bas, 240 px, largeur restante). Les deux : `decorations: false`, `transparent: true`, `skipTaskbar: true`, **`alwaysOnBottom: true`** — posées sur le bureau, sous les applications (DEC-15). Le niveau se change à chaud (`set_window_layer`) et se persiste dans `settings.layer`.
+- **Le bandeau se déploie** : les panneaux de formulaire (recherche, production, Fournisseur, courrier) ne tiennent pas dans 240 px. Plutôt que de les comprimer, la fenêtre `atelier` grandit **vers le haut** (`set_atelier_expanded`) — son bord bas ne bouge jamais, sinon elle passerait sous la barre des tâches — et le panneau occupe la place gagnée sans recouvrir la scène. Hors Tauri, la page fait la même chose en CSS.
+- Les deux fenêtres se calent sur la **zone de travail** de l'écran (`Monitor::work_area`), donc jamais sous une barre système, quelle que soit sa position.
 - Fermer la fenêtre = **masquer** (l'app vit dans le tray). Quitter réellement : menu tray. Fenêtre masquée, l'app continue de tourner : le moteur avance (timers throttlés → rattrapage exact au réaffichage), les animations sont mises en pause (`12` §8).
 - Tray : icône d'état (pastille si événement en attente ou lettre non lue), menu : Afficher/Masquer, Mode discret, Quitter.
 - Multi-écrans : la position sauvegardée est validée au lancement (si l'écran a disparu, recentrage sur l'écran principal).

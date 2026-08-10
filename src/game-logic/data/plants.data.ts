@@ -1,6 +1,6 @@
 /** Templates de plantes (docs/05 §2, docs/08 §5). */
 
-import { MINUTE } from '../time';
+import { HOUR } from '../time';
 import type { EndTag, PlantId, ResourceId } from '../../data/schema';
 
 export interface PlantTemplate {
@@ -21,7 +21,7 @@ export const PLANTS: PlantTemplate[] = [
     id: 'medicinal',
     label: 'Médicinale',
     seedCost: 5,
-    growth: 20 * MINUTE,
+    growth: 3 * HOUR,
     baseYield: 3,
     harvest: 'harvest_med',
     pa: 'pa_med',
@@ -32,7 +32,7 @@ export const PLANTS: PlantTemplate[] = [
     id: 'industrial',
     label: 'Industrielle',
     seedCost: 8,
-    growth: 35 * MINUTE,
+    growth: 6 * HOUR,
     baseYield: 2,
     harvest: 'harvest_ind',
     pa: 'pa_ind',
@@ -43,7 +43,7 @@ export const PLANTS: PlantTemplate[] = [
     id: 'recreational',
     label: 'Récréative',
     seedCost: 12,
-    growth: 45 * MINUTE,
+    growth: 10 * HOUR,
     baseYield: 3,
     harvest: 'harvest_rec',
     pa: 'pa_rec',
@@ -54,7 +54,7 @@ export const PLANTS: PlantTemplate[] = [
     id: 'toxic',
     label: 'Toxique',
     seedCost: 25,
-    growth: 60 * MINUTE,
+    growth: 14 * HOUR,
     baseYield: 2,
     harvest: 'harvest_tox',
     pa: 'pa_tox',

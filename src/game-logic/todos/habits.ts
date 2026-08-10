@@ -20,8 +20,11 @@ export function counterPenalty(n: number, s1: number, s2: number): number {
   return Math.min(light + heavy, dailyCap);
 }
 
-/** EN passif d'une habitude binaire pour une journée réussie. */
-export function abstinenceDailyEnergy(streak: number): number {
+/**
+ * Rente passive d'une habitude binaire pour une journée réussie, en *unités de
+ * barème* — la conversion en ₭ se fait au palier courant (docs/02 §4).
+ */
+export function abstinenceDailyUnits(streak: number): number {
   const { base, perStreak, dailyCap } = BALANCE.abstinence;
   return Math.min(base + perStreak * streak, dailyCap);
 }

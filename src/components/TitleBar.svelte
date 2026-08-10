@@ -15,12 +15,18 @@
   $: trend = state.alignment.score > 1 ? '↑' : state.alignment.score < -1 ? '↓' : '·';
   $: bandColor = band === 'coop' ? 'var(--legal)' : band === 'zone' ? 'var(--corrupt)' : 'var(--broker)';
 
-  async function togglePin() {
-    const next = !state.settings.alwaysOnTop;
-    dispatch({ type: 'UpdateSettings', patch: { alwaysOnTop: next } });
+  /**
+   * Trois positions dans la pile du bureau, en cycle : posé sur le bureau
+   * (défaut, sous les applications), fenêtre ordinaire, premier plan.
+   */
+  const ORDER = ['desktop', 'normal', 'top'] as const;
+
+  async function cycleLayer() {
+    const next = ORDER[(ORDER.indexOf(state.settings.layer) + 1) % ORDER.length];
+    dispatch({ type: 'UpdateSettings', patch: { layer: next } });
     if (isTauri()) {
       const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('set_always_on_top', { flag: next }).catch(() => {});
+      await invoke('set_window_layer', { layer: next }).catch(() => {});
     }
   }
 </script>
@@ -35,10 +41,11 @@
 
   <button
     class="icon-btn"
-    class:on={state.settings.alwaysOnTop}
+    class:on={state.settings.layer === 'top'}
+    class:dim-btn={state.settings.layer === 'desktop'}
     type="button"
-    title={FR.app.pin}
-    on:click={togglePin}><Icon name="pin" size={13} /></button
+    title={`${FR.settings.layer} — ${FR.settings.layers[state.settings.layer]}`}
+    on:click={cycleLayer}><Icon name="pin" size={13} /></button
   >
   <button class="icon-btn" type="button" title={FR.app.quiet} on:click={() => emit('quiet')}>
     <Icon name="chevron" size={13} />
@@ -102,5 +109,9 @@
 
   .icon-btn.on {
     color: var(--lab);
+  }
+
+  .icon-btn.dim-btn {
+    opacity: 0.45;
   }
 </style>

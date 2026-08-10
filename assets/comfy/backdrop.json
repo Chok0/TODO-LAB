@@ -1,0 +1,55 @@
+{
+  "_commentaire": [
+    "Workflow ComfyUI au format API — décor de l'atelier (mur, sol, lumière).",
+    "Placeholders : {{ckpt}} {{prompt}} {{negative}} {{seed}} {{width}} {{height}} {{steps}}",
+    "Le nom du checkpoint dépend de VOTRE installation : node scripts/comfy.mjs --list-models",
+    "Exporté depuis ComfyUI via ⚙ → Dev mode → « Save (API Format) ». Ce fichier est un",
+    "point de départ minimal (SD 1.5 / SDXL, txt2img) : remplacez-le par votre propre export",
+    "dès que votre pipeline se complique — le script ne suppose rien de sa structure."
+  ],
+  "_defaults": {
+    "negative": "texte, lettres, watermark, signature, personnage, visage, saturation excessive",
+    "width": 1216,
+    "height": 256,
+    "steps": 28
+  },
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "{{ckpt}}" }
+  },
+  "2": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{prompt}}", "clip": ["1", 1] }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{negative}}", "clip": ["1", 1] }
+  },
+  "4": {
+    "class_type": "EmptyLatentImage",
+    "inputs": { "width": {{width}}, "height": {{height}}, "batch_size": 1 }
+  },
+  "5": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": {{seed}},
+      "steps": {{steps}},
+      "cfg": 6.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["1", 0],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["4", 0]
+    }
+  },
+  "6": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["5", 0], "vae": ["1", 2] }
+  },
+  "7": {
+    "class_type": "SaveImage",
+    "inputs": { "filename_prefix": "kessler-backdrop", "images": ["6", 0] }
+  }
+}

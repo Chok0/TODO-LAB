@@ -36,7 +36,7 @@ describe('1 — premier lancement', () => {
 
 describe('2 — seuil de texture', () => {
   it('déclenche la lettre de Voss au 3e lot cynique et pas au 4e', () => {
-    let s = give(newGame(), { energy: 900, kess: 3000, pa_med: 40, pa_ind: 20 });
+    let s = give(newGame(), { kess: 40000, pa_med: 40, pa_ind: 20 });
     s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
     s = doAct(s, { type: 'Research', tech: 'still_bp' });
     s = doAct(s, { type: 'BuildMachine', machine: 'still' });
@@ -119,7 +119,7 @@ describe('4 — dette soldée', () => {
 
 describe('5 — Registre', () => {
   it('reflète exactement les effets émis par le moteur', () => {
-    let s = give(newGame(), { energy: 100 });
+    let s = give(newGame(), { kess: 100 });
     const { state, effects } = advanceCollect(
       doAct(s, {
         type: 'AddTodo',
@@ -138,7 +138,7 @@ describe('5 — Registre', () => {
   });
 
   it('borne le registre à 500 lignes', () => {
-    let s = give(newGame(), { energy: 5000, kess: 5000, harvest_med: 3000 });
+    let s = give(newGame(), { kess: 60000, harvest_med: 3000 });
     s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
     s = doAct(s, { type: 'Research', tech: 'conveyor' });
     s = doAct(s, { type: 'AssignRecipe', machine: 'extractor', recipe: 'tonic' });

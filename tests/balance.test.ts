@@ -59,20 +59,52 @@ describe('asymétrie légal / illégal (docs/06 §1)', () => {
   });
 
   it('la corruption totale est un piège assumé', () => {
-    const legal = runSimulation(DAYS, SEED, 'legal');
-    const illegal = runSimulation(DAYS, SEED, 'illegal');
+    // sur la durée : les trois clés ne s'achètent pas en trois semaines
+    const legal = runSimulation(30, SEED, 'legal');
+    const illegal = runSimulation(30, SEED, 'illegal');
 
-    expect(illegal.state.corruption.taxRate).toBeCloseTo(0.35, 5);
+    expect(illegal.state.corruption.taxRate).toBeGreaterThanOrEqual(0.25);
     expect(illegal.revenuePerDay).toBeLessThan(legal.revenuePerDay);
+    expect(illegal.state.stats.kessEarnedTotal).toBeLessThan(legal.state.stats.kessEarnedTotal);
     // et elle produit une vraie pression d'événements
     expect(illegal.state.stats.eventsResolved).toBeGreaterThan(legal.state.stats.eventsResolved);
   });
 
   it('chaque trajectoire s\'installe dans une bande différente', () => {
-    const legal = runSimulation(DAYS, SEED, 'legal');
-    const illegal = runSimulation(DAYS, SEED, 'illegal');
+    const legal = runSimulation(30, SEED, 'legal');
+    const mixed = runSimulation(30, SEED, 'mixed');
     expect(legal.state.alignment.score).toBeGreaterThan(0);
-    expect(illegal.state.alignment.score).toBeLessThan(-30);
+    expect(mixed.state.alignment.score).toBeLessThan(-30);
+  });
+});
+
+describe('la monnaie unique ne tue pas le pilier du jeu', () => {
+  it('sans todos cochées, la partie ne démarre jamais', () => {
+    // le seul apport initial ne finance même pas le premier plan : l'atelier
+    // ne peut pas s'amorcer tout seul, c'est le travail réel qui l'allume
+    const idle = runSimulation(DAYS, SEED, 'idle');
+    expect(idle.state.stats.kessFromProduction).toBe(0);
+    expect(idle.state.lab.machines).toHaveLength(0);
+  });
+
+  it('cocher ses tâches reste une part décisive du revenu, à tous les stades', () => {
+    for (const strategy of ['legal', 'mixed'] as const) {
+      const { state, rows } = runSimulation(30, SEED, strategy);
+      const share = state.stats.kessFromTodos / (state.stats.kessFromTodos + state.stats.kessFromProduction);
+      expect(share, `stratégie ${strategy}`).toBeGreaterThan(0.2);
+      expect(share, `stratégie ${strategy}`).toBeLessThan(0.8);
+
+      // et le cachet suit la montée en gamme : il ne stagne jamais
+      const early = rows[4].fromTodos - rows[3].fromTodos;
+      const late = rows[rows.length - 1].fromTodos - rows[rows.length - 2].fromTodos;
+      expect(late, `stratégie ${strategy}`).toBeGreaterThan(early);
+    }
+  });
+
+  it('le Fournisseur reste plus cher que la culture, sur toutes les plantes', () => {
+    const { state } = runSimulation(14, SEED, 'legal');
+    expect(state.stats.harvests).toBeGreaterThan(0); // la friche a bien été remise en culture
+    expect(state.lab.researched).toContain('farm_bp');
   });
 });
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Bandeau de ressources : Énergie, Kess, et les principes actifs en stock. */
+  /** Bandeau de ressources : le kessler, et les matières en stock. */
   import { game } from '../stores/game';
   import { FR } from '../i18n/fr';
   import Icon from './Icon.svelte';
@@ -13,10 +13,6 @@
 </script>
 
 <div class="bar">
-  <span class="res energy" title={FR.resources.energy}>
-    <Icon name="energy" size={12} />
-    <span class="mono">{fmt(state.resources.energy)}</span>
-  </span>
   <span class="res kess" title={FR.resources.kess}>
     <Icon name="kess" size={12} />
     <span class="mono">{fmt(state.resources.kess)}</span>
@@ -66,10 +62,6 @@
     gap: 3px;
     font-size: 12px;
     white-space: nowrap;
-  }
-
-  .res.energy {
-    color: var(--energy);
   }
 
   .res.kess {

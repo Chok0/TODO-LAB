@@ -74,16 +74,18 @@
     position: absolute;
     inset: 0;
     background: radial-gradient(
-      42% 120% at 10% 0%,
+      42% 120% at 16% 0%,
       color-mix(in oklab, var(--lab) 12%, transparent) 0%,
       transparent 70%
     );
   }
 
+  /* calée au-dessus des planches de culture : c'est elle qui les éclaire,
+     et elle laisse l'étal du Fournisseur dans son coin d'ombre */
   .window {
     position: absolute;
-    left: 22px;
-    top: 24px;
+    left: 148px;
+    top: 22px;
     width: 96px;
     height: 70px;
   }

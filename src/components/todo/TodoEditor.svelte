@@ -45,7 +45,7 @@
       habitKind,
       thresholds: habitKind === 'counter' ? { s1: Math.max(0, s1), s2: Math.max(s1, s2) } : null,
       gain: null,
-      loss: hasLoss ? { resource: 'energy', amount: Math.max(1, lossAmount) } : null,
+      loss: hasLoss ? { resource: 'kess', amount: Math.max(1, lossAmount) } : null,
     });
   }
 </script>

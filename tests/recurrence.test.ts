@@ -33,7 +33,7 @@ describe('1 — hebdo fixe lun/jeu créée un mercredi', () => {
 describe('2 — flexible 3x/semaine, 2 faites', () => {
   it("applique exactement une perte en fin de période", () => {
     let state = newGame(T0); // lundi
-    state = give(state, { energy: 100 });
+    state = give(state, { kess: 100 });
     state = doAct(state, {
       type: 'AddTodo',
       draft: {
@@ -44,42 +44,43 @@ describe('2 — flexible 3x/semaine, 2 faites', () => {
         frequency: 'weekly',
         mode: 'flexible',
         target: 3,
-        loss: { resource: 'energy', amount: 5 },
+        loss: { resource: 'kess', amount: 5 },
       },
     });
     const id = firstTodo(state).id;
     state = doAct(state, { type: 'CompleteTodo', id });
     state = doAct(state, { type: 'CompleteTodo', id });
 
-    const before = state.resources.energy;
+    const before = state.resources.kess;
     // franchit le dimanche → lundi
     state = advance(state, 7 * DAY);
     const todo = firstTodo(state) as RecurringTodo;
 
     expect(todo.periodProgress.done).toBe(0); // période réinitialisée
-    expect(state.resources.energy).toBe(before - 5); // une seule perte
+    expect(state.resources.kess).toBe(before - 5); // une seule perte
   });
 });
 
 describe('3 — multiDaily 3x', () => {
-  it("ne génère pas d'énergie pour la 4e complétion du jour", () => {
+  it('ne rapporte rien pour la 4e complétion du jour', () => {
     let state = newGame(T0);
     state = doAct(state, {
       type: 'AddTodo',
       draft: { title: 'méditer', category: 'perso', difficulty: 2, kind: 'recurring', frequency: 'daily', mode: 'multiDaily', target: 3 },
     });
     const id = firstTodo(state).id;
+    const start = state.resources.kess;
     for (let i = 0; i < 3; i++) state = doAct(state, { type: 'CompleteTodo', id });
-    const after3 = state.resources.energy;
-    expect(after3).toBe(6); // 3 × difficulté 2
+    const after3 = state.resources.kess;
+    expect(after3 - start).toBe(18); // 3 × 6 ₭ (difficulté 2, palier 0)
 
     state = doAct(state, { type: 'CompleteTodo', id });
-    expect(state.resources.energy).toBe(after3);
+    expect(state.resources.kess).toBe(after3);
   });
 });
 
 describe('4 — habitude binaire, absence de 3 jours', () => {
-  it('valide chaque journée par défaut et crédite l\'EN passif', () => {
+  it('valide chaque journée par défaut et crédite la rente passive', () => {
     let state = newGame(T0);
     state = doAct(state, {
       type: 'AddTodo',
@@ -88,19 +89,19 @@ describe('4 — habitude binaire, absence de 3 jours', () => {
     const habit = firstTodo(state) as HabitTodo;
     habit.streak = 12;
 
-    const before = state.resources.energy;
+    const before = state.resources.kess;
     state = advance(state, 3 * DAY);
 
     const after = firstTodo(state) as HabitTodo;
     expect(after.streak).toBe(15);
-    expect(state.resources.energy).toBeGreaterThan(before);
+    expect(state.resources.kess).toBeGreaterThan(before);
     // 3 minuits traversés → 3 crédits (1 + 0,1 × streak, plafonné à 3)
     expect(after.completionHistory.length).toBe(3);
   });
 
   it('remet le streak à zéro et applique une perte croissante au « j\'ai craqué »', () => {
     let state = newGame(T0);
-    state = give(state, { energy: 100 });
+    state = give(state, { kess: 100 });
     state = doAct(state, {
       type: 'AddTodo',
       draft: { title: 'arrêter de fumer', category: 'perso', difficulty: 2, kind: 'habit', habitKind: 'abstinence' },
@@ -112,12 +113,12 @@ describe('4 — habitude binaire, absence de 3 jours', () => {
     const after = firstTodo(state) as HabitTodo;
     expect(after.streak).toBe(0);
     expect(after.failedToday).toBe(true);
-    expect(state.resources.energy).toBe(88); // 100 − min(12, 30) × 1
+    expect(state.resources.kess).toBe(88); // 100 − min(12, 30) × 1
   });
 });
 
 describe('5 — habitude compteur, seuils utilisateur', () => {
-  it('calcule la pénalité documentée : s1=1, s2=3, n=6 → 13 EN', () => {
+  it('calcule la pénalité documentée : s1=1, s2=3, n=6 → 13 ₭', () => {
     expect(counterPenalty(6, 1, 3)).toBe(13);
     expect(counterPenalty(1, 1, 3)).toBe(0);
     expect(counterPenalty(3, 1, 3)).toBe(2);
@@ -125,7 +126,7 @@ describe('5 — habitude compteur, seuils utilisateur', () => {
 
   it('applique la pénalité à minuit et conserve l\'historique quotidien', () => {
     let state = newGame(T0);
-    state = give(state, { energy: 50 });
+    state = give(state, { kess: 50 });
     state = doAct(state, {
       type: 'AddTodo',
       draft: {
@@ -145,7 +146,7 @@ describe('5 — habitude compteur, seuils utilisateur', () => {
     expect(habit.todayCount).toBe(0);
     expect(habit.dailyHistory).toHaveLength(1);
     expect(habit.dailyHistory[0]).toMatchObject({ count: 6, penalty: 13 });
-    expect(state.resources.energy).toBe(37);
+    expect(state.resources.kess).toBe(37);
   });
 });
 
@@ -185,7 +186,7 @@ describe('7 — changement d\'heure (DST)', () => {
 describe('8 — « fait hier »', () => {
   it('valide l\'occurrence manquée et rembourse la perte déjà appliquée', () => {
     let state = newGame(T0);
-    state = give(state, { energy: 100 });
+    state = give(state, { kess: 100 });
     state = doAct(state, {
       type: 'AddTodo',
       draft: {
@@ -195,18 +196,18 @@ describe('8 — « fait hier »', () => {
         kind: 'recurring',
         frequency: 'daily',
         mode: 'fixed',
-        loss: { resource: 'energy', amount: 5 },
+        loss: { resource: 'kess', amount: 5 },
       },
     });
     const id = firstTodo(state).id;
 
     state = advance(state, 20 * HOUR); // minuit franchi sans avoir fait la todo
-    expect(state.resources.energy).toBe(95);
+    expect(state.resources.kess).toBe(95);
     expect(firstTodo(state).lastLoss).not.toBeNull();
 
     state = doAct(state, { type: 'CompleteYesterday', id });
-    // 95 remboursé (+5) puis crédité de la difficulté 3 (+4)
-    expect(state.resources.energy).toBe(104);
+    // 95 remboursé (+5) puis crédité de la difficulté 3 (+12 ₭)
+    expect(state.resources.kess).toBe(112);
     expect(firstTodo(state).lastLoss).toBeNull();
   });
 });

@@ -6,7 +6,7 @@
   export type IconName =
     // set UI (12)
     | 'check' | 'plus' | 'chevron' | 'pin' | 'gear' | 'lock'
-    | 'energy' | 'kess' | 'clean' | 'dirty' | 'envelope' | 'alert'
+    | 'cart' | 'kess' | 'clean' | 'dirty' | 'envelope' | 'alert'
     // set récurrence (5)
     | 'oneshot' | 'fixed' | 'flexible' | 'abstinence' | 'counter'
     // set ressources (8)
@@ -19,7 +19,7 @@
     pin: 'M12 3v5 M8.5 8h7l1 5h-9z M12 13v8',
     gear: 'M12 8.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4z M12 2.5v3 M12 18.5v3 M2.5 12h3 M18.5 12h3 M5.2 5.2l2.1 2.1 M16.7 16.7l2.1 2.1 M18.8 5.2l-2.1 2.1 M7.3 16.7l-2.1 2.1',
     lock: 'M5.5 11h13v9.5h-13z M8.5 11V7.5a3.5 3.5 0 0 1 7 0V11',
-    energy: 'M13.5 2.5 6 13.5h5l-1.5 8 8.5-11h-5.5z',
+    cart: 'M3 4.5h2.6l2.2 10.5h9.4l2.3-7.8H6.4 M9.5 19.5v.01 M16.5 19.5v.01',
     kess: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M9 10.5h6 M9 13.5h6 M12 8v8',
     clean: 'M12 3.5c0 0 6 7 6 10.5a6 6 0 0 1-12 0c0-3.5 6-10.5 6-10.5z',
     dirty: 'M5 15.5c2-2 4 0 6-2s4 0 6.5-2 M5 19.5c2-2 4 0 6-2s4 0 6.5-2 M8 10c1-2 2.5-1.5 3.5-3.5',

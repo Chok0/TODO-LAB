@@ -4,7 +4,7 @@
   import Icon from '../Icon.svelte';
   import { PLANTS } from '../../game-logic/data/plants.data';
   import { computeYield, growthDuration } from '../../game-logic/farming';
-  import { isPlantUnlocked, nextPlotCost, seedCost } from '../../game-logic/selectors';
+  import { isFarmUnlocked, isPlantUnlocked, nextPlotCost, seedCost } from '../../game-logic/selectors';
   import { formatDuration } from '../../game-logic/time';
   import { dispatch, game, nowStore } from '../../stores/game';
   import { FR } from '../../i18n/fr';
@@ -13,6 +13,7 @@
   $: state = $game;
   $: unlocked = PLANTS.filter((p) => isPlantUnlocked(state, p.id));
   $: plotPrice = nextPlotCost(state);
+  $: unlockedFarm = isFarmUnlocked(state);
 
   let menu: string | null = null;
   let picked: PlantId | null = null;
@@ -39,6 +40,16 @@
 <section class="station">
   <h2 class="label">Cultures</h2>
 
+  {#if !unlockedFarm}
+    <!-- la friche existe, elle est simplement en jachère : on la montre -->
+    <div class="fallowland">
+      <div class="weeds" aria-hidden="true">
+        {#each Array(3) as _, i (i)}<span class="tuft" style={`--i:${i}`}></span>{/each}
+      </div>
+      <div class="soil dead"></div>
+      <p class="tiny dim note" title={FR.farm.lockedHint}>{FR.farm.locked}</p>
+    </div>
+  {:else}
   <div class="beds">
     {#each state.farm.plots as plot (plot.id)}
       {@const ready = plot.state.kind === 'ready'}
@@ -128,6 +139,7 @@
       </button>
     {/if}
   </div>
+  {/if}
 </section>
 
 <style>
@@ -146,6 +158,53 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--text-dim);
+  }
+
+  /* --- friche non débloquée : trois touffes sur une terre morte --- */
+  .fallowland {
+    display: grid;
+    grid-template-rows: var(--scene-h) auto;
+    justify-items: center;
+    width: 172px;
+    height: 100%;
+  }
+
+  .weeds {
+    align-self: end;
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    height: 100%;
+    padding-bottom: 13px;
+  }
+
+  .tuft {
+    display: block;
+    width: 2px;
+    height: calc(11px + var(--i) * 5px);
+    background: color-mix(in oklab, var(--farm) 40%, var(--wall));
+    transform: rotate(calc(-8deg + var(--i) * 8deg));
+    transform-origin: bottom center;
+  }
+
+  .soil.dead {
+    position: absolute;
+    bottom: auto;
+    top: calc(var(--scene-h) - 13px);
+    left: 14px;
+    width: 172px;
+    height: 13px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(180deg, color-mix(in oklab, var(--farm-soil) 60%, var(--wall)), var(--wall-far));
+    box-shadow: none;
+  }
+
+  .note {
+    align-self: start;
+    margin-top: 7px;
+    max-width: 172px;
+    text-align: center;
+    line-height: 1.3;
   }
 
   .beds {

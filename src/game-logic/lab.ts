@@ -4,6 +4,7 @@ import { registerSale } from './alignment';
 import { BALANCE, cycleDuration } from './balance';
 import { addRes, emit, spendRes, type Ctx } from './core';
 import { onIllegalCycle, registerDelivery } from './corruption';
+import { unlockFarm } from './farming';
 import { getRecipe, type Recipe } from './data/recipes.data';
 import { getTech } from './data/tech-tree.data';
 import { machineName } from './procgen/naming';
@@ -26,7 +27,7 @@ import type { GameState, MachineInstance, MachineTemplateId, MeansTag, RecipeId,
 export function research(state: GameState, ctx: Ctx, tech: Parameters<typeof getTech>[0]): boolean {
   if (!isTechAvailable(state, tech)) return false;
   const cost = researchCost(state, tech);
-  if (!spendRes(state, 'energy', cost)) return false;
+  if (!spendRes(state, 'kess', cost)) return false;
 
   state.lab.researched.push(tech);
   const node = getTech(tech);
@@ -36,6 +37,8 @@ export function research(state: GameState, ctx: Ctx, tech: Parameters<typeof get
   if (node.unlocksMachine && machineBuildCost(node.unlocksMachine) === 0) {
     buildMachine(state, ctx, node.unlocksMachine);
   }
+  // la remise en culture ne débloque pas un écran : elle livre les parcelles
+  if (tech === 'farm_bp') unlockFarm(state, ctx);
   return true;
 }
 
@@ -110,7 +113,7 @@ export function setMeans(state: GameState, _ctx: Ctx, id: MachineTemplateId, mea
 
 export function cleanLab(state: GameState, ctx: Ctx): boolean {
   if (state.lab.pollution <= 0) return false;
-  if (!spendRes(state, 'energy', BALANCE.pollution.cleanCostEnergy)) return false;
+  if (!spendRes(state, 'kess', BALANCE.pollution.cleanCost)) return false;
   const before = state.lab.pollution;
   state.lab.pollution = Math.max(0, state.lab.pollution - BALANCE.pollution.cleanAmount);
   emit(ctx, { kind: 'pollution_cleaned', amount: before - state.lab.pollution });
@@ -168,6 +171,7 @@ export function completeCycle(state: GameState, ctx: Ctx, machine: MachineInstan
       const price = effectiveSalePrice(state, recipe);
       addRes(state, 'kess', price);
       state.stats.kessEarnedTotal += price;
+      state.stats.kessFromProduction += price;
       emit(ctx, { kind: 'sale', recipe: recipe.id, label: recipe.label, kess: price, branch: recipe.branch });
       registerSale(state, ctx, recipe.branch, recipe.endTag === 'harmful');
     }

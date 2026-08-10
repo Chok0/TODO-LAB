@@ -36,7 +36,7 @@
     <div class="empty-bench">
       <p class="tiny dim">L'établi de votre oncle est là. Il ne demande qu'un plan.</p>
       <button class="pill go" type="button" on:click={() => emit('open', 'rd')}>
-        <Icon name="energy" size={12} /> Ouvrir la recherche
+        <Icon name="flask" size={12} /> Ouvrir la recherche
       </button>
     </div>
   {:else}
@@ -99,7 +99,7 @@
 
     <div class="bench-foot">
       <button class="chip" type="button" on:click={() => emit('open', 'rd')}>
-        <Icon name="energy" size={11} /> Recherche
+        <Icon name="flask" size={11} /> Recherche
       </button>
       <button class="chip" type="button" on:click={() => emit('open', 'production')}>
         <Icon name="gear" size={11} /> Réglages
@@ -108,7 +108,7 @@
         <button
           class="chip warn"
           type="button"
-          disabled={state.resources.energy < BALANCE.pollution.cleanCostEnergy}
+          disabled={state.resources.kess < BALANCE.pollution.cleanCost}
           title={FR.lab.pollution}
           on:click={() => dispatch({ type: 'CleanLab' })}
         >
@@ -259,10 +259,12 @@
     right: 22px;
   }
 
+  /* posées sur le mur, à droite du titre de la station : le bas de la scène
+     appartient à la légende des machines, qui ne doit jamais être recouverte */
   .bench-foot {
     position: absolute;
-    left: 16px;
-    bottom: 8px;
+    left: 84px;
+    top: 5px;
     z-index: 3;
     display: flex;
     gap: 5px;

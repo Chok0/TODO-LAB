@@ -42,10 +42,10 @@
       <button
         class="btn tiny"
         type="button"
-        disabled={state.resources.energy < BALANCE.pollution.cleanCostEnergy}
+        disabled={state.resources.kess < BALANCE.pollution.cleanCost}
         on:click={() => dispatch({ type: 'CleanLab' })}
       >
-        {FR.lab.clean} · {BALANCE.pollution.cleanCostEnergy} EN
+        {FR.lab.clean} · {BALANCE.pollution.cleanCost} EN
       </button>
     </div>
   {/if}

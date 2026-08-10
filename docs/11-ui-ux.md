@@ -7,10 +7,14 @@
 3. **Le jeu récompense, il n'interrompt pas** : pas de modal bloquante (même les événements de corruption sont des cartes épinglées, DEC-09) ; les feedbacks sont brefs et locaux.
 4. **Habitudes invisibles par défaut** : panneau replié à chaque démarrage, aucun contenu affiché passivement (`03` §1.3).
 
-## 2. Layout général (deux fenêtres, DEC-12)
+## 2. Layout général (deux fenêtres, DEC-12 et DEC-15)
 
 Les deux fenêtres se calent sur la **zone de travail** de l'écran — l'écran moins
-les barres système — donc rien ne passe jamais sous la barre des tâches.
+les barres système — donc rien ne passe jamais sous la barre des tâches. Elles se
+posent **au niveau du bureau** : sous les applications, comme un fond d'écran
+vivant. On les consulte en réduisant ses fenêtres. Trois niveaux au choix
+(Réglages, ou clic sur l'épingle de la barre de titre) : *posé sur le bureau*
+(défaut), *fenêtre ordinaire*, *toujours au premier plan*.
 
 ```
 ┌──────────────────────────────────────────────┬──────────────────┐
@@ -22,12 +26,28 @@ les barres système — donc rien ne passe jamais sous la barre des tâches.
 │                                              │ ▶ Habitudes    · │ ← toujours replié
 │                                              │                  │
 ├──────────────────────────────────────────────┤                  │
-│ CULTURES   ÉTABLI            COURRIER  CPT.  │                  │ ← fenêtre `atelier`
-│   ▓▓  ▓▓   ▄▟█▄  ▄▟█▄        [note]   14 EN  │                  │   240 px de haut,
+│ FOURNIS. CULTURES  ÉTABLI    COURRIER  CPT.  │                  │ ← fenêtre `atelier`
+│  [▤▤]  ▓▓ ▓▓ ▄▟█▄ ▄▟█▄       [note]  128 ₭  │                  │   240 px de haut,
 │  ─────────────────────────────────────────── │                  │   largeur restante
 │  Semer     Recherche Réglages  Log    Zone   │                  │
 └──────────────────────────────────────────────┴──────────────────┘
                     ▲ barre des tâches en dessous
+```
+
+**Le bandeau se déploie** quand on ouvre un panneau (recherche, production,
+Fournisseur, courrier) : la fenêtre grandit **vers le haut** — son bord bas ne
+bouge jamais — et le panneau occupe la place gagnée, **au-dessus** de la scène
+plutôt que par-dessus. On règle une machine en la voyant tourner. À la
+fermeture, le bandeau retrouve la hauteur de la scène.
+
+```
+┌──────────────────────────────────────────────┐
+│ Labo — Développement                      ×  │ ← le panneau déployé
+│ ▸ Blueprint extracteur              20 ₭     │
+│ ▸ Remise en culture                150 ₭     │
+├──────────────────────────────────────────────┤
+│ FOURNISSEUR CULTURES  ÉTABLI   COURRIER CPT. │ ← la scène, toujours visible
+└──────────────────────────────────────────────┘
 ```
 
 **La colonne todo** reste volontairement sobre : c'est l'outil de travail.
@@ -56,15 +76,16 @@ Contrat du composant réutilisable — tous les panneaux de l'app l'utilisent :
 
 - **Carte todo** : fond teinté par catégorie (perso/pro), bordure gauche + petite icône par type de récurrence (ponctuelle/fixe/flexible/abstinence/compteur — `12` §5), titre, échéance relative (« ce soir », « jeu. »), points de difficulté (1–4 points discrets).
 - Groupes : Aujourd'hui (occurrences dues, échéances du jour **et tâches sans échéance** — c'est l'inbox : une tâche qu'on vient d'écrire ne doit jamais disparaître hors de vue), Cette semaine, Plus tard (échéances au-delà de la semaine). Tri par échéance puis difficulté décroissante. Le groupe qui reçoit une todo se déplie automatiquement à la création.
-- Complétion : case → micro-animation (`12` §8) + flottant `+X EN` ; undo toast 10 s (`03` §5).
+- Complétion : case → micro-animation (`12` §8) + flottant `+X ₭` ; undo toast 10 s (`03` §5). Le cachet est affiché sur la carte, avant complétion : on voit ce que la tâche vaut.
 - Compteur d'habitude : bouton `+1` et total du jour visibles uniquement le panneau déplié ; « j'ai craqué » = bouton texte discret, confirmation inline en un tap.
 - Édition : clic sur carte → popover d'édition (mêmes chips que le parseur + champs gain/perte/seuils).
 
 ## 5. Dock modules
 
 - Accordéon : un seul module déplié à la fois (l'espace vertical est compté) ; le dock entier est repliable.
-- **Labo R&D** : arbre compact vertical (nœuds : verrouillé/disponible/acquis), coût EN affiché, tooltip d'effet. Achat en un clic si solde suffisant.
+- **Labo R&D** : arbre compact vertical (nœuds : verrouillé/disponible/acquis), coût en ₭ affiché, tooltip d'effet. Achat en un clic si solde suffisant.
 - **Labo Production** : une carte par machine — icône SVG (animée si `running`, `12` §8), nom généré, jauge de cycle avec temps restant, recette assignée (sélecteur), toggle Moyens propre/dégradant (icône goutte/fumée), jauge pollution globale du labo + bouton nettoyage.
+- **Fournisseur** : l'étal en scène est une pile de caisses qui maigrit à mesure que le quota du jour se consomme, avec le reste du quota en légende ; le détail (prix à l'unité, comparaison avec le coût cultivé, lots ×1/×5/×10) s'ouvre en panneau déployé. Tant qu'aucune machine n'est montée, l'étal est *fermé* et le dit.
 - **Farming** : une carte par parcelle — illustration du stade de croissance, jauge temps, badge dette si > 10 %, bouton récolter. Plantation = deux taps : plante puis méthode (coûts/effets affichés sur les deux boutons).
 - **Log** : trois onglets (`07` §4) — Correspondance (lettres, typo dédiée), Registre (fil factuel), Carnet (tendances habitudes 7/30 j, petits sparklines sobres).
 
@@ -74,7 +95,7 @@ Un unique glyphe discret dans la barre de titre : icône de la faction dominante
 
 ## 7. Réglages (⚙)
 
-Opacité (60–100 %), always-on-top, position/taille (reset), mode discret au démarrage, export/import de sauvegarde, à-propos. V1.5 : raccourci global quick-add, autostart. Pas de réglages d'équilibrage exposés.
+Opacité (60–100 %), **position sur le bureau** (bureau / fenêtre ordinaire / premier plan, DEC-15), recentrage des fenêtres, mode discret au démarrage, export/import de sauvegarde, à-propos. V1.5 : raccourci global quick-add, autostart. Pas de réglages d'équilibrage exposés.
 
 ## 8. Premier lancement (onboarding diégétique)
 

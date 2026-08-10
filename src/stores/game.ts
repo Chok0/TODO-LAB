@@ -53,17 +53,23 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 function toastFor(effect: Effect): void {
   switch (effect.kind) {
-    case 'energy':
-      pushToast(`+${fmt(effect.amount)} EN`, 'good');
+    case 'payout':
+      pushToast(`+${fmt(effect.amount)} ₭`, 'good');
       break;
     case 'penalty':
-      pushToast(`−${fmt(effect.amount)} EN`, 'bad');
+      pushToast(`−${fmt(effect.amount)} ₭`, 'bad');
       break;
     case 'sale':
       pushToast(`${effect.label} · +${fmt(effect.kess)} ₭`, 'good');
       break;
     case 'harvest':
       pushToast(`Récolte · ${effect.amount}`, 'good');
+      break;
+    case 'supply_bought':
+      pushToast(`Fournisseur · ${effect.amount} pour ${fmt(effect.cost)} ₭`, 'neutral');
+      break;
+    case 'farm_unlocked':
+      pushToast('La friche est à vous', 'good');
       break;
     case 'letter':
       pushToast(`Courrier : ${effect.title}`, 'neutral');
@@ -257,6 +263,20 @@ async function notifyDueToday(state: GameState): Promise<void> {
   }
 }
 
+/**
+ * Réapplique le niveau de fenêtre enregistré. La configuration Tauri pose le
+ * défaut (posé sur le bureau) au démarrage ; ceci restitue le choix du joueur.
+ */
+async function applyWindowLayer(state: GameState): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('set_window_layer', { layer: state.settings.layer });
+  } catch {
+    /* coque absente ou commande refusée : la fenêtre garde son niveau par défaut */
+  }
+}
+
 // ------------------------------------------------------------ cycle de vie
 
 export async function initialize(): Promise<void> {
@@ -291,6 +311,7 @@ export async function initialize(): Promise<void> {
   enforceInvariants(get(game), false);
   ready.set(true);
   publish();
+  void applyWindowLayer(get(game));
   void notifyDueToday(get(game));
 
   if (tickTimer) clearInterval(tickTimer);

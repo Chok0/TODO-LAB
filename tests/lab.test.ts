@@ -7,7 +7,7 @@ import { getRecipe } from '../src/game-logic/data/recipes.data';
 import type { GameState } from '../src/data/schema';
 
 function labGame(): GameState {
-  let s = give(newGame(), { energy: 600, kess: 2000 });
+  let s = give(newGame(), { kess: 20000 });
   s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
   return s;
 }
@@ -46,24 +46,24 @@ describe('2 — vente du tonique, modificateurs cumulés', () => {
 
     // bande neutre : commission du Courtier de 15 %
     const s0 = labGame();
-    expect(effectiveSalePrice(s0, base)).toBeCloseTo(10 * 0.85, 5);
+    expect(effectiveSalePrice(s0, base)).toBeCloseTo(16 * 0.85, 5);
 
     // + catalyse (+10 %)
     const s1 = structuredClone(s0);
     s1.lab.researched.push('catalysis');
-    expect(effectiveSalePrice(s1, base)).toBeCloseTo(10 * 1.1 * 0.85, 5);
+    expect(effectiveSalePrice(s1, base)).toBeCloseTo(16 * 1.1 * 0.85, 5);
 
     // + pollution 10 % + taxe 3 %
     const s2 = structuredClone(s1);
     s2.lab.pollution = 0.1;
     s2.corruption.taxRate = 0.03;
     // le prix effectif est arrondi au centime
-    expect(effectiveSalePrice(s2, base)).toBeCloseTo(10 * 1.1 * 0.9 * 0.97 * 0.85, 2);
+    expect(effectiveSalePrice(s2, base)).toBeCloseTo(16 * 1.1 * 0.9 * 0.97 * 0.85, 2);
 
     // bande Coopérative : +25 % sur le légal, plus de commission du Courtier
     const s3 = structuredClone(s0);
     s3.alignment.score = 40;
-    expect(effectiveSalePrice(s3, base)).toBeCloseTo(10 * 1.25, 5);
+    expect(effectiveSalePrice(s3, base)).toBeCloseTo(16 * 1.25, 5);
   });
 
   it('crédite réellement la trésorerie à la fin du cycle', () => {
@@ -75,7 +75,7 @@ describe('2 — vente du tonique, modificateurs cumulés', () => {
     const { state, effects } = advanceCollect(s, 60 * SEC);
     const sales = effectsOf(effects, 'sale');
     expect(sales).toHaveLength(1);
-    expect(state.resources.kess).toBeCloseTo(before + 8.5, 5);
+    expect(state.resources.kess).toBeCloseTo(before + 16 * 0.85, 5);
   });
 });
 
@@ -136,7 +136,7 @@ describe('5 — moyens dégradants', () => {
 describe('6 — amélioration Mk2', () => {
   it('réduit la durée de cycle de 15 % sans affecter le cycle en cours', () => {
     let s = fullLab();
-    s = give(s, { harvest_med: 10, kess: 2000 });
+    s = give(s, { harvest_med: 10, kess: 20000 });
     s = doAct(s, { type: 'StartCycle', machine: 'extractor' });
     const runBefore = machine(s, 'extractor').run!;
     const durationBefore = runBefore.endsAt - runBefore.startedAt;
@@ -173,13 +173,13 @@ describe('R&D', () => {
   it('offre la construction de l\'extracteur (matériel de l\'oncle)', () => {
     const s = labGame();
     expect(machine(s, 'extractor')).toBeDefined();
-    expect(s.resources.energy).toBe(590); // 600 − 10 EN, aucun kess dépensé
+    expect(s.resources.kess).toBe(20000 - 20); // seule la recherche est payée
   });
 
   it('respecte les prérequis de l\'arbre', () => {
-    let s = give(newGame(), { energy: 600 });
+    let s = give(newGame(), { kess: 20000 });
     s = doAct(s, { type: 'Research', tech: 'catalysis' });
     expect(s.lab.researched).not.toContain('catalysis');
-    expect(s.resources.energy).toBe(600);
+    expect(s.resources.kess).toBe(20000);
   });
 });

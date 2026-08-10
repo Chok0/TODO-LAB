@@ -1,6 +1,6 @@
 # 03 — Module Todos
 
-Module le plus critique du projet : **source unique de la ressource primaire** (Énergie) et point de contact quotidien avec l'utilisateur. Objectif n°1 : friction de saisie minimale.
+Module le plus critique du projet : **ce qui amorce et finance l'atelier** (DEC-14) et point de contact quotidien avec l'utilisateur. Objectif n°1 : friction de saisie minimale.
 
 ## 1. Types de todo
 
@@ -44,11 +44,11 @@ Sous-catégorie dédiée aux changements de comportement. Deux sous-types :
 | Champ | Valeurs | Effet |
 |---|---|---|
 | `category` | `perso` / `pro` (extensible V2) | Pilote la teinte de fond de la carte |
-| `difficulty` | 1 trivial / 2 facile / 3 normal / 4 corvée | Échelle de **coût en motivation** (pas en temps) → EN générée (`02` §4) |
+| `difficulty` | 1 trivial / 2 facile / 3 normal / 4 corvée | Échelle de **coût en motivation** (pas en temps) → cachet en ₭ (`02` §4) |
 | `gain` (optionnel) | `{resource, amount}` | Récompense additionnelle à la complétion |
 | `loss` (optionnel) | `{resource, amount}` | Pénalité au dépassement d'échéance (pertinent surtout pour récurrentes/habitudes) |
 
-Une todo simple sans enjeu déclaré génère juste l'EN de sa difficulté. `gain` et `loss` sont indépendants et jamais obligatoires.
+Une todo simple sans enjeu déclaré rapporte juste le cachet de sa difficulté. `gain` et `loss` sont indépendants et jamais obligatoires.
 
 ## 3. Moteur de récurrence — sémantique normative
 
@@ -56,7 +56,7 @@ Une todo simple sans enjeu déclaré génère juste l'EN de sa difficulté. `gai
 - Période courante : jour civil (`daily`), semaine lun→dim (`weekly`), mois civil (`monthly`), fenêtre glissante ancrée à la date de création (`everyNDays`).
 - `monthly fixed` sur un jour absent du mois (le 31 en avril) → reporté au **dernier jour du mois**.
 - Création en milieu de période : la période courante est due au prorata **plancher**, minimum 1 — formule (hebdo) : `max(1, floor(N × jours_restants / 7))`. Exemple : créer "3x/semaine" un vendredi (3 jours restants) → 1 occurrence due cette semaine-là. Même principe au prorata des jours restants pour le mensuel.
-- Complétion rétroactive : autorisée pour **J−1 uniquement** (menu contextuel « fait hier »), au-delà l'occasion est perdue. L'EN est créditée au jour effectif de complétion.
+- Complétion rétroactive : autorisée pour **J−1 uniquement** (menu contextuel « fait hier »), au-delà l'occasion est perdue. Le cachet est crédité au jour effectif de complétion.
 - Une occurrence `fixed` non faite à la fin de sa journée est **manquée** (applique `loss` si défini, sinon rien). Une `flexible` n'est manquée qu'en fin de période si le compte < N.
 - Jours d'absence (app fermée) : traités séquentiellement au rattrapage (`02` §11) — les occurrences dues sont marquées manquées, les binaires validées par défaut.
 
@@ -123,7 +123,7 @@ Chaque règle = `{ pattern: RegExp, field, resolve(match) => value, confidence }
 
 ## 5. Interactions de complétion
 
-- Ponctuelle / occurrence : case à cocher → animation brève + flottant `+X EN` → la carte quitte la liste active.
+- Ponctuelle / occurrence : case à cocher → animation brève + flottant `+X ₭` → la carte quitte la liste active.
 - Compteur d'habitude : bouton `+1` (répétable) ; le total du jour est visible **uniquement panneau déplié**.
 - Binaire : bouton discret « j'ai craqué » (confirmation en un tap, pas de modal culpabilisante) → streak reset + perte (`02` §4).
 - Annulation : toute complétion est annulable pendant 10 s (undo toast) — l'économie est recalculée, pas juste masquée.
@@ -146,9 +146,9 @@ Structures TypeScript complètes dans `10-modele-de-donnees.md`. Points notables
 
 1. Hebdo fixe lun/jeu créée un mercredi : seule l'occurrence de jeudi est due cette semaine-là.
 2. Flexible 3x/semaine, 2 faites, fin de semaine : 1 manquée, `loss` appliquée une seule fois.
-3. multiDaily 3x : 4 complétions le même jour → la 4ᵉ ne génère pas d'EN (plafonnée à N).
-4. Binaire streak 12, absence de 3 jours : streak = 15 au retour (validation par défaut), EN passif crédité pour chaque minuit traversé.
-5. Compteur s1=1, s2=3, n=6 : pénalité = 2×1 + ceil(2×3^1.5) = 2 + 11 = 13 EN.
+3. multiDaily 3x : 4 complétions le même jour → la 4ᵉ ne rapporte rien (plafonnée à N).
+4. Binaire streak 12, absence de 3 jours : streak = 15 au retour (validation par défaut), rente passive créditée pour chaque minuit traversé.
+5. Compteur s1=1, s2=3, n=6 : pénalité = 2×1 + ceil(2×3^1.5) = 2 + 11 = 13 unités de barème, converties en ₭ au palier courant.
 6. Mensuel fixe le 31, mois d'avril : due le 30.
 7. Changement d'heure (DST) : aucune journée dupliquée ni sautée.
 8. « fait hier » sur une occurrence de J−1 manquée : occurrence validée, `loss` annulée si déjà appliquée.

@@ -37,7 +37,7 @@ Toutes les couleurs de l'app viennent d'ici — aucun hex ailleurs (règle lint 
 
   /* sémantique */
   --ok: #7fb069;  --warn: #d9a441;  --danger: #a4243b;
-  --energy: #e9c46a;          /* Énergie */
+  --supply: #e9c46a;          /* Fournisseur, caisses */
   --kess: #b08d3e;            /* monnaie */
 
   /* géométrie */
@@ -67,7 +67,7 @@ Fichiers `.woff2` téléchargés depuis Google Fonts **au moment du build initia
 
 - Grille **24×24**, stroke **2 px**, `stroke-linecap/linejoin: round`, coins arrondis rayon 2, style outline ; remplissages réservés aux accents d'état (couleur du module).
 - Icônes lisibles à 16 px (test : chaque icône rendue à 16 px doit rester identifiable).
-- **Set UI (12)** : todo/check, plus, chevron, épingle (pin), engrenage (réglages), cadenas, éclair (EN), pièce (₭), goutte (propre), fumée (dégradant), enveloppe, alerte.
+- **Set UI (12)** : todo/check, plus, chevron, épingle (niveau de fenêtre), engrenage (réglages), cadenas, chariot (Fournisseur), pièce (₭), goutte (propre), fumée (dégradant), enveloppe, alerte.
 - **Set récurrence (5)** : ponctuelle (point), fixe (calendrier), flexible (vague), abstinence (bouclier), compteur (barres).
 - **Set ressources (8)** : récolte, PA (fiole), produit (caisse), réputation (poignée de main), clé de corruption, dette (jauge fendue), pollution (nuage), streak (flamme).
 - Wrapper Svelte `Icon.svelte` : `<Icon name size tone />`, SVG inline (pas de sprite externe), `currentColor` par défaut.
@@ -92,7 +92,7 @@ Un dessin de base par **stade** (4 : semis, pousse, mature, prêt-à-récolter) 
 |---|---|---|
 | Machine `running` | rotation d'engrenage / bulles de cuve (2-3 éléments max) | boucle 2-4 s |
 | Jauge de cycle | remplissage linéaire piloté par la vraie progression (custom property mise à jour au tick) | continue |
-| Complétion de todo | check qui se dessine (stroke-dashoffset) + flottant `+X EN` qui monte et s'estompe | 400 ms |
+| Complétion de todo | check qui se dessine (stroke-dashoffset) + flottant `+X ₭` qui monte et s'estompe | 400 ms |
 | Récolte | 3-5 particules simples | 500 ms |
 | Repli de panneau | hauteur ease-out | 150 ms |
 | Lettre non lue | pastille — pulsation lente unique puis statique | 2 s puis stop |

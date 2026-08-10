@@ -9,12 +9,16 @@ import { STREAM_NAMES, type StreamName } from '../game-logic/rng';
 
 export type { DayKey, Timestamp };
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 // ---------------------------------------------------------------- ressources
 
+/**
+ * Une seule monnaie : le kessler (₭). Tout ce qui rapporte — une tâche cochée
+ * comme un produit vendu — rapporte des ₭ ; tout ce qui coûte se paie en ₭.
+ * Les autres ressources sont des matières, jamais des monnaies.
+ */
 export type ResourceId =
-  | 'energy'
   | 'kess'
   | 'harvest_med'
   | 'harvest_ind'
@@ -26,7 +30,6 @@ export type ResourceId =
   | 'pa_tox';
 
 export const RESOURCE_IDS: ResourceId[] = [
-  'energy',
   'kess',
   'harvest_med',
   'harvest_ind',
@@ -40,7 +43,7 @@ export const RESOURCE_IDS: ResourceId[] = [
 
 // ------------------------------------------------------------------ domaines
 
-export type TechId = 'extractor_bp' | 'still_bp' | 'conveyor' | 'adv_synthesis' | 'catalysis';
+export type TechId = 'extractor_bp' | 'farm_bp' | 'still_bp' | 'conveyor' | 'adv_synthesis' | 'catalysis';
 export type MachineTemplateId = 'extractor' | 'still' | 'synthesizer';
 export type PlantId = 'medicinal' | 'industrial' | 'recreational' | 'toxic';
 export type PnjId = 'voss' | 'coles' | 'reyes';
@@ -76,7 +79,8 @@ export interface TodoBase {
   loss: { resource: ResourceId; amount: number } | null;
   createdAt: Timestamp;
   archived: boolean;
-  completionHistory: { day: DayKey; energyGained: number }[];
+  /** `gained` : les ₭ effectivement crédités ce jour-là par cette todo. */
+  completionHistory: { day: DayKey; gained: number }[];
   /** Dernière perte appliquée — permet de l'annuler via « fait hier » (docs/03 §8). */
   lastLoss: { day: DayKey; resource: ResourceId; amount: number } | null;
 }
@@ -145,9 +149,17 @@ export interface Plot {
 }
 
 export interface FarmState {
+  /** Vide tant que la « Remise en culture » n'est pas recherchée (docs/05 §0). */
   plots: Plot[];
-  /** Graines déjà en stock (offertes au départ ou gagnées) — consommées avant tout achat. */
+  /** Graines déjà en stock (offertes au déblocage ou gagnées) — consommées avant tout achat. */
   seedStock: Partial<Record<PlantId, number>>;
+}
+
+// ---------------------------------------------------------------- fournisseur
+
+/** Le Fournisseur : achat d'intrants au comptant, dans la limite du quota du jour. */
+export interface SupplyState {
+  boughtToday: number;
 }
 
 // ---------------------------------------------------- corruption & alignement
@@ -262,7 +274,10 @@ export interface NarrativeState {
 
 export interface Stats {
   kessEarnedTotal: number;
-  energyEarnedTotal: number;
+  /** Part des gains venant des todos — sert au bilan du Carnet et à l'équilibrage. */
+  kessFromTodos: number;
+  /** Part venant de la production du labo. La somme des deux ≈ kessEarnedTotal. */
+  kessFromProduction: number;
   salesLegal: number;
   salesIllegal: number;
   cyclesCompleted: number;
@@ -279,8 +294,17 @@ export interface Stats {
 
 // -------------------------------------------------------------------- réglages
 
+/**
+ * Où les fenêtres se placent dans la pile du bureau.
+ *  • `desktop` — sous toutes les applications, posées sur le fond d'écran ;
+ *    c'est le comportement d'un widget et le défaut ;
+ *  • `normal`  — fenêtres ordinaires, elles passent devant si on les clique ;
+ *  • `top`     — toujours au-dessus de tout.
+ */
+export type WindowLayer = 'desktop' | 'normal' | 'top';
+
 export interface Settings {
-  alwaysOnTop: boolean;
+  layer: WindowLayer;
   opacity: number;
   windowPos: { x: number; y: number; w: number; h: number } | null;
   collapsedPanels: Record<string, boolean>;
@@ -305,6 +329,7 @@ export interface GameState {
   resources: Record<ResourceId, number>;
   lab: LabState;
   farm: FarmState;
+  supply: SupplyState;
   corruption: CorruptionState;
   alignment: AlignmentState;
   narrative: NarrativeState;
@@ -330,11 +355,6 @@ function zeroCounters(): Record<StreamName, number> {
 }
 
 export function createInitialState(now: Timestamp, seed: number, dayKeyFn: (ts: Timestamp) => DayKey): GameState {
-  const plots: Plot[] = [];
-  for (let i = 0; i < BALANCE.farm.startingPlots; i++) {
-    plots.push({ id: `plot-${i + 1}`, envDebt: 0, state: { kind: 'empty' } });
-  }
-
   return {
     meta: {
       version: SCHEMA_VERSION,
@@ -346,7 +366,7 @@ export function createInitialState(now: Timestamp, seed: number, dayKeyFn: (ts: 
       lastDayProcessed: dayKeyFn(now),
     },
     settings: {
-      alwaysOnTop: true,
+      layer: 'desktop',
       opacity: 0.94,
       windowPos: null,
       collapsedPanels: { later: true, rd: true, production: true, farm: true, log: false },
@@ -354,9 +374,12 @@ export function createInitialState(now: Timestamp, seed: number, dayKeyFn: (ts: 
       reducedMotion: false,
     },
     todos: [],
-    resources: emptyResources(),
+    resources: { ...emptyResources(), kess: BALANCE.start.kess },
     lab: { researched: [], machines: [], pollution: 0 },
-    farm: { plots, seedStock: { medicinal: BALANCE.start.seeds.medicinal } },
+    // pas de parcelle au départ : la friche est en jachère jusqu'à la remise
+    // en culture, et les intrants s'achètent au Fournisseur (docs/05 §0)
+    farm: { plots: [], seedStock: {} },
+    supply: { boughtToday: 0 },
     corruption: {
       keys: [],
       taxRate: 0,
@@ -388,7 +411,8 @@ export function createInitialState(now: Timestamp, seed: number, dayKeyFn: (ts: 
     },
     stats: {
       kessEarnedTotal: 0,
-      energyEarnedTotal: 0,
+      kessFromTodos: 0,
+      kessFromProduction: 0,
       salesLegal: 0,
       salesIllegal: 0,
       cyclesCompleted: 0,

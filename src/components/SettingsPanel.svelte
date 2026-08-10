@@ -3,6 +3,7 @@
   import { dispatch, exportSave, game, importSave } from '../stores/game';
   import { downloadSave, isTauri, readFileAsText } from '../data/save';
   import { FR } from '../i18n/fr';
+  import type { WindowLayer } from '../data/schema';
 
   const emit = createEventDispatcher<{ close: void }>();
   $: state = $game;
@@ -30,6 +31,15 @@
     const { invoke } = await import('@tauri-apps/api/core');
     await invoke('reset_window_position').catch(() => {});
   }
+
+  async function setLayer(layer: WindowLayer) {
+    dispatch({ type: 'UpdateSettings', patch: { layer } });
+    if (!isTauri()) return;
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('set_window_layer', { layer }).catch(() => {});
+  }
+
+  const LAYERS: WindowLayer[] = ['desktop', 'normal', 'top'];
 </script>
 
 <div class="overlay" role="presentation" on:click|self={() => emit('close')}>
@@ -48,6 +58,24 @@
       />
       <span class="mono tiny">{Math.round(state.settings.opacity * 100)} %</span>
     </label>
+
+    <div class="field">
+      <span class="tiny dim">{FR.settings.layer}</span>
+      <div class="segmented">
+        {#each LAYERS as layer}
+          <button
+            class="seg"
+            class:on={state.settings.layer === layer}
+            type="button"
+            title={FR.settings.layerHint[layer]}
+            on:click={() => setLayer(layer)}
+          >
+            {FR.settings.layers[layer]}
+          </button>
+        {/each}
+      </div>
+      <p class="tiny dim hint">{FR.settings.layerHint[state.settings.layer]}</p>
+    </div>
 
     <label class="row check">
       <input
@@ -89,6 +117,41 @@
 </div>
 
 <style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .segmented {
+    display: flex;
+    gap: 3px;
+  }
+
+  .seg {
+    flex: 1;
+    padding: 3px 6px;
+    font-size: 11px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+  }
+
+  .seg:hover {
+    background: var(--bg-2);
+    color: var(--text-0);
+  }
+
+  .seg.on {
+    border-color: var(--lab);
+    background: color-mix(in oklab, var(--lab) 20%, var(--bg-1));
+    color: var(--text-0);
+  }
+
+  .hint {
+    line-height: 1.35;
+  }
+
   .overlay {
     position: fixed;
     inset: 0;

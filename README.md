@@ -1,6 +1,6 @@
 # Labo Kessler — todo list gamifiée en widget desktop
 
-> Une todo list qui vit sur le bord de votre écran. Chaque tâche accomplie dans la vraie vie produit de l'Énergie, et cette Énergie alimente un atelier de chimie hérité dans une zone franche post-industrielle. Développez vos machines, cultivez vos intrants, et choisissez à chaque étape entre la voie légale — lente, stable, respectée — et les arrangements de la Zone : rapides, chers, et définitifs. Une correspondance se souvient de tout ce que vous avez choisi.
+> Une todo list posée sur votre bureau, sous vos fenêtres. Chaque tâche accomplie dans la vraie vie rapporte des kessler, et ces kessler financent un atelier de chimie hérité dans une zone franche post-industrielle. Achetez vos premiers intrants, remettez la friche en culture, développez vos machines — et choisissez à chaque étape entre la voie légale (lente, stable, respectée) et les arrangements de la Zone : rapides, chers, et définitifs. Une correspondance se souvient de tout ce que vous avez choisi.
 
 **État : V1 jouable.** Logique de jeu complète et testée, interface complète, application desktop qui se build.
 
@@ -16,7 +16,7 @@ Trois voies, de la plus simple à la plus complète.
 npm install && npm run build:single
 ```
 
-Produit `dist-single/labo-kessler.html` : **283 Ko, un seul fichier, aucune dépendance réseau**. Double-cliquez, le jeu s'ouvre dans votre navigateur et se sauvegarde dedans. Pratique pour essayer, ou pour emporter la partie sur une clé USB.
+Produit `dist-single/labo-kessler.html` : **321 Ko, un seul fichier, aucune dépendance réseau**. Double-cliquez, le jeu s'ouvre dans votre navigateur et se sauvegarde dedans. Pratique pour essayer, ou pour emporter la partie sur une clé USB.
 
 ### 2. L'installeur Windows (.exe) — sans rien installer non plus
 
@@ -95,21 +95,30 @@ Collez `%APPDATA%\fr.kessler.labo` dans la barre d'adresse de l'Explorateur pour
 ## Vérifier
 
 ```bash
-npm run verify        # typage + 77 tests + tests Rust + build
+npm run verify        # typage + 87 tests + tests Rust + build
 npm test              # logique de jeu seule
 npm run sim -- --days 21 --seed 42 --strategy legal    # simulateur d'équilibrage
 npm run sim -- --days 30 --seed 42 --strategy mixed --letters   # avec la correspondance
+npm run sim -- --days 21 --seed 42 --strategy idle     # sans jamais cocher une tâche
 ```
+
+La stratégie `idle` est le garde-fou du pilier du jeu : elle termine à **0 ₭ de
+production et 0 machine**. L'atelier ne s'amorce pas tout seul.
 
 Le simulateur est l'outil d'équilibrage du projet : il rejoue une partie complète par sessions réalistes et imprime la courbe jour par jour. C'est lui qui a révélé les trois défauts corrigés avant livraison (voir `docs/qa-v1.md` §5).
 
 ## Comment on joue
 
 1. **Écrivez ce que vous avez à faire** dans le champ du haut. Le parseur comprend le français : « appeler le comptable tous les lundis », « sport 3 fois par semaine », « limiter café max 3 par jour ». Corrigez d'un clic sur une puce, `Entrée` valide.
-2. **Cochez vos tâches.** Chaque complétion produit de l'Énergie — 1 à 8 selon la difficulté. C'est la seule source d'Énergie du jeu.
-3. **Dépensez-la en recherche.** L'extracteur de votre oncle est encore là ; il ne demande qu'un plan.
-4. **Semez, récoltez, raffinez, vendez.** Le convoyeur (60 EN) fait basculer le jeu en vrai idle : les machines tournent pendant que vous travaillez.
-5. **Choisissez.** La Coopérative paie mieux mais impose ses délais. La Zone ouvre des recettes très lucratives contre une taxe permanente et des incidents qu'il faudra régler — en argent, en réputation, ou en service rendu.
+2. **Cochez vos tâches.** Chaque complétion rapporte des kessler (₭) — la seule monnaie du jeu. Le cachet suit la montée en gamme de votre atelier : ce que vaut votre heure augmente à mesure que ce que vous produisez se vend mieux.
+3. **Dépensez-les en recherche.** L'extracteur de votre oncle est encore là ; il ne demande qu'un plan (20 ₭).
+4. **Achetez vos intrants, puis cultivez-les.** Le Fournisseur livre la matière au comptant, dans la limite de ce que la Zone laisse passer chaque jour. La « Remise en culture » (150 ₭) ouvre la friche : le même intrant, deux fois et demie moins cher, contre du temps de croissance.
+5. **Raffinez, vendez.** Le convoyeur (300 ₭) fait basculer le jeu en vrai idle : les machines enchaînent pendant que vous travaillez.
+6. **Choisissez.** La Coopérative paie mieux mais impose ses délais. La Zone ouvre des recettes très lucratives contre une taxe permanente et des incidents qu'il faudra régler — en argent, en réputation, ou en service rendu.
+
+Les deux fenêtres se posent **sur le bureau, sous vos applications** : le jeu ne
+recouvre jamais votre travail. Réduisez vos fenêtres pour le voir ; l'épingle de
+la barre de titre bascule entre bureau, fenêtre ordinaire et premier plan.
 
 Tout est local : aucun compte, aucun serveur, aucune requête réseau au runtime.
 
@@ -123,8 +132,9 @@ Tout est local : aucun compte, aucun serveur, aucune requête réseau au runtime
 /src/components     Svelte — ne mute jamais l'état, envoie des actions
 /src/stores         pont moteur ↔ UI : tick, autosave, undo
 /src-tauri          Rust : fenêtre, tray, persistance atomique. Ne connaît aucune règle de jeu.
-/tests              77 tests, miroirs des scénarios obligatoires de la documentation
-/scripts            simulateur d'équilibrage
+/tests              87 tests, miroirs des scénarios obligatoires de la documentation
+/scripts            simulateur d'équilibrage + passerelle ComfyUI
+/assets/comfy       workflows de génération d'images, versionnés
 ```
 
 Deux principes portent tout le reste :
@@ -151,6 +161,7 @@ La spécification complète est dans [`/docs`](docs/) — elle a précédé le c
 | 11 | [UI/UX](docs/11-ui-ux.md) | Layout, composants, onboarding |
 | 12 | [Design system](docs/12-design-system-svg.md) | Tokens, icônes, machines et plantes SVG |
 | 13 | [Roadmap et tests](docs/13-roadmap-et-tests.md) | Les 6 goals et leurs critères |
+| 14 | [Passerelle ComfyUI](docs/14-passerelle-comfyui.md) | Générer les visuels : script, workflows, ce qui reste en SVG |
 | — | [Recette V1](docs/qa-v1.md) | Ce qui a été vérifié, comment, et ce qui reste à tester sur une vraie machine |
 | — | [Glossaire](docs/GLOSSAIRE.md) | Vocabulaire canonique |
 
