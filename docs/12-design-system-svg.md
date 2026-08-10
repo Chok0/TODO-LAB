@@ -123,3 +123,22 @@ Les composants machines/plantes prennent leurs états en props (`mk`, `state`, `
 6. Animations et raffinements.
 
 Critère de cohérence final : une capture de l'app complète doit donner l'impression d'**un seul illustrateur** — même stroke, même palette, même géométrie partout.
+
+## 12. Cohabiter avec un décor peint (docs/14)
+
+Le bandeau atelier peut recevoir une image de fond générée. Elle est produite
+**hors du dépôt** : rien ne garantit sa luminance. Trois règles en découlent, à
+respecter pour tout élément posé dans la scène :
+
+1. **Les rangées de texte sont protégées par le voile** — titres de station en
+   haut, légendes sous la ligne de sol. N'y placez rien qui dépende d'un fond
+   clair.
+2. **Tout texte au milieu de la scène porte son propre fond.** C'est le cas du
+   message de l'établi vide, des pastilles et du tableau des Compteurs. Un
+   nouveau texte à cet endroit doit faire de même.
+3. **Les tracés SVG décoratifs** (panneau à outils, silhouettes) peuvent
+   disparaître sur un décor clair : ils sont décoratifs, jamais informatifs.
+   Aucun état de jeu ne doit se lire uniquement dans le décor.
+
+Vérification : `docs/14` §5 décrit le test de borne — on rend le bandeau avec un
+décor entièrement blanc et on mesure le contraste sous chaque rangée de texte.

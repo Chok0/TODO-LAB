@@ -1,7 +1,7 @@
 {
   "_commentaire": [
-    "Workflow ComfyUI au format API — décor de l'atelier (mur, sol, lumière).",
-    "Placeholders : {{ckpt}} {{prompt}} {{negative}} {{seed}} {{width}} {{height}} {{steps}}",
+    "Workflow ComfyUI au format API — txt2img générique, utilisé par tous les visuels.",
+    "Placeholders : {{ckpt}} {{prompt}} {{negative}} {{seed}} {{width}} {{height}} {{steps}} {{prefix}}",
     "Le nom du checkpoint dépend de VOTRE installation : node scripts/comfy.mjs --list-models",
     "Exporté depuis ComfyUI via ⚙ → Dev mode → « Save (API Format) ». Ce fichier est un",
     "point de départ minimal (SD 1.5 / SDXL, txt2img) : remplacez-le par votre propre export",
@@ -11,7 +11,8 @@
     "negative": "texte, lettres, watermark, signature, personnage, visage, saturation excessive",
     "width": 1216,
     "height": 256,
-    "steps": 28
+    "steps": 28,
+    "prefix": "kessler"
   },
   "1": {
     "class_type": "CheckpointLoaderSimple",

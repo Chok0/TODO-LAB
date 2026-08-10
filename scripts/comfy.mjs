@@ -22,6 +22,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 
 const DEFAULT_HOST = process.env.COMFYUI_URL || 'http://127.0.0.1:8188';
+const DEFAULT_WORKFLOW = 'assets/comfy/txt2img.json';
+const DA_MANIFEST = 'assets/comfy/da.json';
 /** ComfyUI rend la main tout de suite : on interroge l'historique jusqu'au bout. */
 const POLL_INTERVAL = 1500;
 const POLL_TIMEOUT = 10 * 60 * 1000;
@@ -40,6 +42,8 @@ function parseArgs(argv) {
       case '--out': opts.out = next(); break;
       case '--host': opts.host = next(); break;
       case '--seed': opts.set.seed = next(); break;
+      case '--da': opts.da = argv[i + 1] && !argv[i + 1].startsWith('--') ? next() : '*'; break;
+      case '--ckpt': opts.ckpt = next(); break;
       case '--dry-run': opts.dryRun = true; break;
       case '--set': {
         const pair = next() ?? '';
@@ -65,7 +69,10 @@ Passerelle ComfyUI — génère les visuels du jeu.
 
   --check                 vérifie que ComfyUI répond
   --list-models           liste les checkpoints disponibles sur votre installation
-  --workflow <fichier>    workflow au format API (obligatoire pour générer)
+  --da [id]               produit toute la direction artistique (assets/comfy/da.json),
+                          ou le seul visuel <id>
+  --ckpt <nom>            checkpoint à utiliser (ou variable COMFYUI_CKPT)
+  --workflow <fichier>    workflow au format API (défaut : assets/comfy/txt2img.json)
   --set cle=valeur        remplace {{cle}} dans le workflow (répétable)
   --seed <n>              raccourci pour --set seed=<n>
   --out <dossier>         où ranger les images (défaut : src/assets/generated)
@@ -261,15 +268,70 @@ async function generate(opts) {
   );
 }
 
+// ------------------------------------------------------- direction artistique
+
+/**
+ * Produit la série définie dans `assets/comfy/da.json`. Les seeds y sont figées :
+ * c'est ce qui permet de refaire exactement la même image dans six mois, et donc
+ * de traiter la DA comme du code plutôt que comme une trouvaille.
+ */
+async function generateDA(opts) {
+  const manifest = JSON.parse(
+    await readFile(DA_MANIFEST, 'utf8').catch(() => fail(`Manifeste illisible : ${DA_MANIFEST}`)),
+  );
+  const style = manifest._style ?? {};
+  const entries = Object.entries(manifest).filter(([id]) => !id.startsWith('_'));
+
+  const wanted = opts.da === '*' ? entries : entries.filter(([id]) => id === opts.da);
+  if (!wanted.length) {
+    fail(`Visuel « ${opts.da} » inconnu.\n    Disponibles : ${entries.map(([id]) => id).join(', ')}`);
+  }
+
+  const ckpt = opts.ckpt ?? opts.set.ckpt ?? process.env.COMFYUI_CKPT;
+  if (!ckpt) {
+    fail(
+      'Aucun checkpoint indiqué.\n' +
+        '    --ckpt <nom>, ou export COMFYUI_CKPT=<nom>\n' +
+        '    Pour connaître les vôtres : npm run comfy -- --list-models',
+    );
+  }
+
+  for (const [id, asset] of wanted) {
+    console.log(`\n▸ ${id} — ${asset._role ?? ''}`);
+    await generate({
+      ...opts,
+      workflow: opts.workflow ?? DEFAULT_WORKFLOW,
+      set: {
+        ckpt,
+        // le suffixe de style est ce qui tient la cohérence de la série
+        prompt: [asset.prompt, style.suffixe].filter(Boolean).join(', '),
+        negative: style.negatif ?? asset.negative,
+        width: asset.width,
+        height: asset.height,
+        seed: asset.seed,
+        prefix: asset.prefix ?? `kessler-${id}`,
+        ...opts.set,
+      },
+    });
+    if (asset.cible) console.log(`    cible attendue : ${asset.cible}`);
+  }
+
+  console.log(
+    `\n  Les fichiers portent le nom donné par ComfyUI. Renommez-les vers la\n` +
+      `  « cible attendue » ci-dessus pour que le jeu les prenne en compte.\n`,
+  );
+}
+
 // --------------------------------------------------------------------- main
 
 const opts = parseArgs(process.argv.slice(2));
 
-if (opts.help || (!opts.check && !opts.listModels && !opts.workflow)) {
+if (opts.help || (!opts.check && !opts.listModels && !opts.workflow && !opts.da)) {
   console.log(USAGE);
   process.exit(opts.help ? 0 : 1);
 }
 
 if (opts.check) await check(opts.host);
 if (opts.listModels) await listModels(opts.host);
-if (opts.workflow) await generate(opts);
+if (opts.da) await generateDA(opts);
+else if (opts.workflow) await generate(opts);

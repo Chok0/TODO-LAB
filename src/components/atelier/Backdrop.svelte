@@ -8,10 +8,30 @@
    */
   export let benchLeft = 0;
   export let benchWidth = 0;
+
+  /**
+   * Décor peint, optionnel. S'il existe un fichier dans `src/assets/generated`,
+   * Vite le résout ici et il se glisse SOUS le mur dessiné ; sinon la scène
+   * garde son décor CSS. Le jeu ne dépend jamais d'une image générée — c'est ce
+   * qui permet de la remplacer, de la retoucher ou de la retirer sans rien casser.
+   * Voir docs/14 §4.
+   */
+  const painted = Object.values(
+    import.meta.glob('../../assets/generated/atelier-backdrop.{png,webp,jpg,jpeg}', {
+      eager: true,
+      query: '?url',
+      import: 'default',
+    }),
+  )[0] as string | undefined;
 </script>
 
 <div class="backdrop" aria-hidden="true">
   <div class="wall"></div>
+  {#if painted}
+    <!-- le décor peint reste une ambiance : la lisibilité du bandeau prime -->
+    <div class="painted" style={`background-image:url(${painted})`}></div>
+    <div class="scrim"></div>
+  {/if}
   <div class="light"></div>
 
   <!-- fenêtre à petits carreaux : la source de la lumière rasante -->
@@ -67,6 +87,37 @@
       var(--floor);
     background-size: 100% var(--scene-h), 100% 100%;
     background-repeat: no-repeat;
+  }
+
+  /* décor généré (ComfyUI) : posé sur le mur dessiné, jamais à sa place */
+  .painted {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center bottom;
+    /* Le filtre borne la luminance de l'image, quelle qu'elle soit : la DA se
+       génère hors du dépôt, on ne peut rien supposer de ce qui atterrira ici. */
+    filter: brightness(0.62) saturate(0.8);
+    opacity: 0.78;
+  }
+
+  /* Le voile n'est pas uniforme : il est opaque LÀ OÙ IL Y A DU TEXTE — la
+     rangée des titres de station en haut, la rangée des légendes sous la ligne
+     de sol — et s'efface au milieu, où l'image a le champ libre. Sans lui, un
+     décor clair ferait tomber le contraste sous le seuil lisible (docs/11 §11) ;
+     uniforme, il étoufferait l'image au point de la rendre inutile. */
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--wall-far) 88%, transparent) 0,
+      color-mix(in oklab, var(--wall-far) 88%, transparent) 26px,
+      transparent calc(var(--scene-h) * 0.35),
+      transparent calc(var(--scene-h) - 18px),
+      color-mix(in oklab, var(--wall) 78%, transparent) var(--scene-h),
+      color-mix(in oklab, var(--bg-0) 92%, transparent) 100%
+    );
   }
 
   /* lumière rasante venant de la fenêtre, à gauche */

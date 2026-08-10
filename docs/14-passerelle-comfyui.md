@@ -20,7 +20,35 @@ Il y a donc exactement deux montages, et le premier détermine le second :
 Le montage retenu ici marche dans les deux cas : **le pipeline vit dans le
 dépôt**, et l'exécution se fait là où ComfyUI tourne.
 
-## 2. Voie A — le script du dépôt (recommandée)
+## 2. La direction artistique, en une commande
+
+Toute la DA est décrite dans `assets/comfy/da.json` : un prompt par visuel, sa
+taille, sa **seed figée**, et le fichier cible. Un suffixe de style commun est
+collé à chaque prompt — c'est lui qui tient la cohérence de la série.
+
+```bash
+export COMFYUI_CKPT=votre-modele.safetensors   # une fois par session
+npm run comfy -- --list-models                 # si vous ne savez pas lequel
+npm run comfy -- --da                          # toute la série
+npm run comfy -- --da backdrop                 # un seul visuel
+```
+
+| id | Ce que c'est | Taille | Où ça atterrit |
+|---|---|---|---|
+| `backdrop` | décor du bandeau : mur, sol, profondeur | 1216 × 256 | `src/assets/generated/atelier-backdrop.png` |
+| `papier` | texture de papier des lettres | 768 × 768 | `src/assets/generated/papier-lettre.png` |
+| `icone` | source de l'icône d'application | 512 × 512 | à détourer vers `src-tauri/icons/` |
+| `reference-machines` | planche à **tracer** en SVG | 1024 × 640 | ne part pas dans le bundle |
+
+Les seeds sont figées volontairement : c'est ce qui permet de refaire exactement
+la même image dans six mois, et donc de traiter la DA comme du code plutôt que
+comme une trouvaille. Changez-en une pour explorer, gardez-la dès que le
+résultat convient.
+
+ComfyUI nomme ses sorties lui-même (`kessler-backdrop_00001_.png`) : renommez
+vers le fichier cible, sinon rien ne se branche.
+
+## 3. Voie A — le script du dépôt (recommandée)
 
 `scripts/comfy.mjs` parle à l'API HTTP de ComfyUI. Aucune dépendance : du Node
 nu, pour qu'il survive aux mises à jour de ComfyUI comme du projet.
@@ -29,10 +57,11 @@ nu, pour qu'il survive aux mises à jour de ComfyUI comme du projet.
 npm run comfy -- --check          # ComfyUI répond-il ?
 npm run comfy -- --list-models    # quels checkpoints avez-vous installés ?
 
-npm run comfy -- --workflow assets/comfy/backdrop.json \
+# hors manifeste : un visuel ponctuel, avec son propre prompt
+npm run comfy -- --workflow assets/comfy/txt2img.json \
   --set ckpt=votre-modele.safetensors \
-  --set prompt="atelier de lutherie reconverti, mur de brique sombre, lumière rasante de fenêtre à petits carreaux, palette froide, ambiance nocturne" \
-  --seed 42
+  --set prompt="établi de lutherie, serre-joints et gabarits au mur, lumière rasante" \
+  --set width=1216 --set height=256 --seed 42
 ```
 
 Les images atterrissent dans `src/assets/generated/`, accompagnées d'un
@@ -50,7 +79,7 @@ Pourquoi cette voie plutôt qu'un serveur MCP : **le prompt et la seed sont du
 code**. Versionnés, relisibles en diff, rejouables. Une image dont on a perdu le
 prompt est une image qu'on ne peut plus retoucher.
 
-## 3. Voie B — un serveur MCP ComfyUI
+## 4. Voie B — un serveur MCP ComfyUI
 
 Si vous lancez Claude Code sur votre machine et voulez qu'il appelle ComfyUI
 directement, sans passer par le script, ajoutez un serveur MCP à la racine du
@@ -77,7 +106,7 @@ Cette voie est plus directe mais moins traçable : les prompts vivent dans la
 conversation, pas dans le dépôt. Le compromis raisonnable est d'**itérer** en MCP
 et de **figer** le résultat retenu dans un workflow de `assets/comfy/`.
 
-## 4. Où des rasters ont leur place — et où ils n'en ont pas
+## 5. Où des rasters ont leur place — et où ils n'en ont pas
 
 Le design system (`12`) est SVG pour de bonnes raisons : les machines changent
 d'état, la V1 tient en 4,7 Mo, et rien ne sort du binaire au runtime. Générer
@@ -95,10 +124,33 @@ Une image générée peut aussi servir de **référence à tracer** : produire l
 en raster, puis le redessiner en SVG. C'est souvent le meilleur usage sur un
 projet où la cohérence de trait compte plus que le détail.
 
+### Comment le décor se branche — et pourquoi il ne casse rien
+
+`Backdrop.svelte` cherche l'image par `import.meta.glob`. Absente, la scène garde
+son décor CSS ; présente, elle se glisse **sous** le mur dessiné. Le jeu ne
+dépend donc jamais d'une image générée : on peut la remplacer, la retoucher ou la
+retirer sans toucher au code.
+
+Trois garde-fous tiennent la lisibilité, parce que l'image est produite **hors du
+dépôt** et qu'on ne peut rien supposer de ce qui y atterrira :
+
+1. **Un filtre borne sa luminance** (`brightness(0.62) saturate(0.8)`, opacité 0,78).
+2. **Le voile n'est pas uniforme.** Il est opaque là où il y a du texte — la
+   rangée des titres de station en haut, la rangée des légendes sous la ligne de
+   sol — et s'efface au milieu, où l'image a le champ libre. Un voile uniforme
+   étoufferait l'image au point de la rendre inutile.
+3. **Le texte du milieu de scène porte son propre fond** : le message de
+   l'établi vide, les pastilles, et le tableau des Compteurs.
+
+Vérifié en poussant l'entrée à l'absurde — un décor **entièrement blanc**, la
+pire image possible. Fond mesuré sous les rangées de texte : 49 à 54 sur 255,
+soit **4,8:1 pour `--text-dim` et 9,7:1 pour `--text-0`**, au-dessus du seuil de
+4,5:1 (`11` §11). Si ça tient contre du blanc, ça tient contre n'importe quoi.
+
 ### Le budget, à surveiller
 
 La V1 tient en 4,7 Mo de binaire pour un budget de 15 Mo (`09` §8), et le fichier
-HTML unique en 283 Ko. Un décor plein écran en PNG pèse vite 400 Ko à 1 Mo.
+HTML unique en 321 Ko. Un décor plein écran en PNG pèse vite 400 Ko à 1 Mo.
 Règles à tenir :
 
 - une seule image de décor, en WebP, redimensionnée à la taille réellement
@@ -108,7 +160,7 @@ Règles à tenir :
 - toute image ajoutée passe par `npm run build:single` pour constater le coût
   avant d'être commitée.
 
-## 5. Direction artistique (rappel pour les prompts)
+## 6. Direction artistique (rappel pour les prompts)
 
 L'univers est posé dans `07` §1 : une zone franche post-industrielle, un ancien
 atelier de facteur d'instruments reconverti en labo. Les mots qui reviennent :

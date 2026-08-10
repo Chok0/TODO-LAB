@@ -66,12 +66,18 @@
     border-left: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
   }
 
+  /* Les compteurs vivent au milieu de la scène, là où un décor peint peut être
+     clair : ils portent donc leur propre fond, comme un tableau de bord posé
+     sur le mur plutôt que peint dessus (docs/14 §4). */
   .readouts {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     gap: 9px;
-    padding-bottom: 10px;
+    margin: 26px -8px 0;
+    padding: 8px 8px 10px;
+    border-radius: var(--radius);
+    background: color-mix(in oklab, var(--bg-0) 62%, transparent);
   }
 
   .label {

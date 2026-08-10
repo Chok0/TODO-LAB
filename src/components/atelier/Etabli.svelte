@@ -279,7 +279,9 @@
     font-size: 10.5px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    background: color-mix(in oklab, var(--bg-1) 80%, transparent);
+    /* opaque à 92 % : au milieu du bandeau, le décor peint peut être clair et
+       une pastille translucide y deviendrait illisible (docs/14 §4) */
+    background: color-mix(in oklab, var(--bg-1) 92%, transparent);
     color: var(--text-dim);
     white-space: nowrap;
   }
@@ -309,5 +311,13 @@
     gap: 7px;
     height: var(--scene-h);
     padding-bottom: 14px;
+  }
+
+  /* le seul texte qui vive au milieu de la scène : il lui faut son propre fond,
+     sinon il repose directement sur le décor */
+  .empty-bench p {
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--bg-0) 78%, transparent);
   }
 </style>
