@@ -166,12 +166,18 @@
     height: 100vh;
   }
 
-  /* --- aperçu navigateur : la disposition du bureau, dans une page --- */
+  /* --- aperçu navigateur : la disposition du bureau, dans une page ---
+     Sous Tauri les fenêtres sont transparentes et laissent voir le fond
+     d'écran ; dans un onglet, ce vide serait blanc. On peint donc ici un
+     bureau plausible, pour que l'aperçu montre ce que montrera le bureau. */
   .preview {
     display: flex;
     flex-direction: column;
     width: 100vw;
     height: 100vh;
+    background:
+      radial-gradient(120% 90% at 22% 10%, color-mix(in oklab, var(--lab) 14%, transparent), transparent 60%),
+      linear-gradient(160deg, #10161c 0%, #0b1015 55%, #070a0d 100%);
   }
 
   .preview-top {
