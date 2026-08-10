@@ -49,6 +49,8 @@ export type Action =
   | { type: 'SetMeans'; machine: MachineTemplateId; means: MeansTag }
   | { type: 'StartCycle'; machine: MachineTemplateId }
   | { type: 'CleanLab' }
+  // --- fournisseur ---
+  | { type: 'BuySupply'; plant: PlantId; amount: number }
   // --- farming ---
   | { type: 'BuyPlot' }
   | { type: 'Plant'; plotId: string; plant: PlantId; method: 'agro' | 'intensive' }

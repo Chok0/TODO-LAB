@@ -11,7 +11,55 @@ type Migration = (state: any) => any;
 
 /** Index N = migration de la version N vers N+1. */
 const MIGRATIONS: Record<number, Migration> = {
-  // v1 est la version initiale ; les migrations futures s'ajoutent ici.
+  /**
+   * v1 → v2 : monnaie unique. L'Énergie disparaît en tant que ressource ; le
+   * solde d'Énergie devient des kessler à parité, et l'historique des todos
+   * garde ses montants sous un nom neutre. Rien n'est jeté : la partie reprend
+   * là où elle s'était arrêtée, avec un seul compteur au lieu de deux.
+   */
+  1: (state: any) => {
+    const energy = Number(state?.resources?.energy) || 0;
+    if (state.resources) {
+      state.resources.kess = (Number(state.resources.kess) || 0) + energy;
+      delete state.resources.energy;
+    }
+
+    for (const todo of state.todos ?? []) {
+      for (const entry of todo.completionHistory ?? []) {
+        if (entry.gained === undefined) entry.gained = Number(entry.energyGained) || 0;
+        delete entry.energyGained;
+      }
+      // une perte enregistrée en Énergie n'a plus de support : elle devient des ₭
+      if (todo.lastLoss?.resource === 'energy') todo.lastLoss.resource = 'kess';
+      if (todo.gain?.resource === 'energy') todo.gain.resource = 'kess';
+      if (todo.loss?.resource === 'energy') todo.loss.resource = 'kess';
+    }
+
+    state.stats ??= {};
+    state.stats.kessFromTodos ??= Number(state.stats.energyEarnedTotal) || 0;
+    state.stats.kessFromProduction ??= Number(state.stats.kessEarnedTotal) || 0;
+    state.stats.kessEarnedTotal =
+      (Number(state.stats.kessEarnedTotal) || 0) + (Number(state.stats.energyEarnedTotal) || 0);
+    delete state.stats.energyEarnedTotal;
+
+    // les fenêtres passent au niveau du bureau ; l'ancien booléen n'a plus cours
+    state.settings ??= {};
+    state.settings.layer ??= state.settings.alwaysOnTop === false ? 'normal' : 'desktop';
+    delete state.settings.alwaysOnTop;
+
+    state.supply ??= { boughtToday: 0 };
+
+    // Une partie en cours cultivait déjà : elle conserve ses parcelles et se
+    // voit créditer la recherche correspondante, sinon le farming disparaîtrait
+    // sous ses pieds.
+    state.lab ??= {};
+    state.lab.researched ??= [];
+    if ((state.farm?.plots?.length ?? 0) > 0 && !state.lab.researched.includes('farm_bp')) {
+      state.lab.researched.push('farm_bp');
+    }
+
+    return state;
+  },
 };
 
 export function migrate(raw: any): GameState {
@@ -69,6 +117,9 @@ export function normalize(state: any): GameState {
   state.farm.plots ??= [];
   state.farm.seedStock ??= {};
 
+  state.supply ??= {};
+  state.supply.boughtToday = Number(state.supply.boughtToday) || 0;
+
   state.corruption ??= {};
   state.corruption.keys ??= [];
   state.corruption.favors ??= [];
@@ -105,7 +156,8 @@ export function normalize(state: any): GameState {
   }
   for (const k of [
     'kessEarnedTotal',
-    'energyEarnedTotal',
+    'kessFromTodos',
+    'kessFromProduction',
     'salesLegal',
     'salesIllegal',
     'cyclesCompleted',
@@ -122,7 +174,7 @@ export function normalize(state: any): GameState {
   }
 
   state.settings ??= {};
-  state.settings.alwaysOnTop ??= true;
+  state.settings.layer ??= 'desktop';
   state.settings.opacity ??= 0.94;
   state.settings.windowPos ??= null;
   state.settings.collapsedPanels ??= {};

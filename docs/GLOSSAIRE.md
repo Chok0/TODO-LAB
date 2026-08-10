@@ -4,7 +4,10 @@ Vocabulaire canonique du projet. En cas de doute dans une discussion ou un commi
 
 | Terme | Définition | Réf. |
 |---|---|---|
-| **Énergie (EN)** | Ressource primaire, générée uniquement par la complétion de todos. | `02` §1 |
+| **Kessler (₭)** | La monnaie unique du jeu (DEC-14) : une tâche cochée en rapporte, tout s'y paie. | `02` §1 |
+| **Cachet** | Ce que rapporte une tâche cochée, indexé sur le meilleur produit vendable accessible. | `02` §4 |
+| **Fournisseur** | Étal où s'achètent les récoltes, dans la limite d'un quota quotidien, avant la remise en culture. | `02` §7b |
+| **Remise en culture** | Recherche qui ouvre le farming et livre les deux premières parcelles. | `04` §1 |
 | **Kess (₭)** | Monnaie locale de la Zone Franche de Kessler, obtenue par la vente de produits. | `02` §1 |
 | **Principe actif (PA)** | Intrant raffiné obtenu par extraction d'une récolte ; typé par plante (méd/ind/récr/tox). | `02` §1 |
 | **Habitude binaire (abstinence)** | Todo validée par défaut chaque jour ; seule l'action « j'ai craqué » la fait échouer. Alimente un streak. | `03` §1.3 |
@@ -19,7 +22,7 @@ Vocabulaire canonique du projet. En cas de doute dans une discussion ou un commi
 | **Moyens (propre/dégradant)** | Le *comment* de la production : procédé propre ou dégradant (labo), agroécologie ou monoculture intensive (farming). | `02` §8 |
 | **Fin (bénéfique/neutre/nocif)** | Le *quoi* : tag moral porté par chaque recette et chaque plante. | `06` §6 |
 | **Texture** | Croisement Fin × Moyens d'une production (`aligné`, `cynique`, `artisan_du_vice`, `zone_pure`, …). Aucun effet économique ; sélectionne les variantes narratives. | `06` §6 |
-| **Pollution d'atelier** | Jauge du labo (0–50 %) montée par les procédés dégradants ; réduit les ventes labo ; nettoyable contre EN. | `02` §8 |
+| **Pollution d'atelier** | Jauge du labo (0–50 %) montée par les procédés dégradants ; réduit les ventes labo ; nettoyable contre ₭. | `02` §8 |
 | **Dette environnementale** | Taux par parcelle (0–80 %) installé par la monoculture intensive ; réduit le rendement ; réversible par agroécologie/jachère. | `05` §3 |
 | **Jachère** | Parcelle mise en pause qui régénère sa dette environnementale (−2 %/h). | `05` §3 |
 | **Clé de corruption** | Achat permanent qui débloque un palier illégal contre une taxe permanente sur toutes les ventes. | `06` §2 |

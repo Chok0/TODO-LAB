@@ -1,23 +1,25 @@
 # 04 — Module Labo (Développement & Production)
 
-Le labo est le cœur de transformation : il convertit l'Énergie (todos) et les intrants (farming) en produits vendables. Deux sous-modules distincts dans l'UI, un seul domaine logique.
+Le labo est le cœur de transformation : il convertit des intrants — achetés au Fournisseur, puis cultivés — en produits vendables. Deux sous-modules distincts dans l'UI, un seul domaine logique.
 
 ## 1. Labo — Développement (R&D)
 
-La R&D se paie en **Énergie uniquement** (c'est le lien direct "je fais mes todos → mon labo progresse"). Une recherche est instantanée à l'achat (pas de temps d'attente en V1) ; la friction vient du coût, pas du délai.
+La R&D se paie en **kessler**, comme tout le reste (DEC-14) : c'est le lien direct « je fais mes todos → mon labo progresse », puisque les premières recherches ne sont finançables que par des tâches cochées. Une recherche est instantanée à l'achat (pas de temps d'attente en V1) ; la friction vient du coût, pas du délai.
 
 ### Arbre de tech V1
 
 ```mermaid
 flowchart TD
-  A[Blueprint Extracteur — 10 EN] --> B[Blueprint Distillateur — 40 EN]
-  A --> C[Recherche Convoyeur — 60 EN]
-  B --> D[Recherche Synthèse avancée — 80 EN<br/>débloque Synthétiseur + accès branche illégale]
-  B --> E[Recherche Catalyse — 120 EN<br/>+10% ventes labo, débloque Mk2]
+  A[Blueprint Extracteur — 20 ₭] --> F[Remise en culture — 150 ₭<br/>ouvre le farming : 2 parcelles + 3 graines]
+  A --> C[Recherche Convoyeur — 300 ₭]
+  A --> B[Blueprint Distillateur — 700 ₭]
+  B --> D[Recherche Synthèse avancée — 1400 ₭<br/>débloque Synthétiseur + accès branche illégale]
+  B --> E[Recherche Catalyse — 2600 ₭<br/>+10% ventes labo, débloque Mk2]
+  D --> E
   D --> E
 ```
 
-| Nœud | Coût EN | Effet |
+| Nœud | Coût (₭) | Effet |
 |---|---|---|
 | Blueprint Extracteur | 10 | Débloque Extracteur Mk1 (construction offerte — matériel de l'oncle, DEC-10) |
 | Blueprint Distillateur | 40 | Débloque Distillateur Mk1 (construction 60 ₭) |
@@ -29,7 +31,7 @@ Avec subvention Coopérative active : coûts de R&D restants −20 % (`02` §9).
 
 ### Extension V1.5 (définie, non implémentée en V1)
 
-Presse (blueprint 160 EN) et Catalyseur passif (200 EN) — templates déjà présents dans `08-generation-procedurale.md` pour que l'ajout soit un pur ajout de data.
+Presse (blueprint 3200 ₭) et Catalyseur passif (4000 ₭) — templates déjà présents dans `08-generation-procedurale.md` pour que l'ajout soit un pur ajout de data.
 
 ## 2. Machines
 
@@ -55,7 +57,7 @@ Presse (blueprint 160 EN) et Catalyseur passif (200 EN) — templates déjà pr�
 ### Pollution d'atelier
 
 - Jauge globale du labo (0–50 %). Ventes labo × `(1 − POLLUTION)`.
-- Cycle de nettoyage : bouton dédié, coûte 5 EN, −5 % pollution, instantané.
+- Cycle de nettoyage : bouton dédié, coûte 120 ₭, −5 % pollution, instantané.
 - La pollution est un état **visible** (jauge dans le panneau labo) — contrairement à l'alignement, il n'y a rien de caché ici.
 
 ## 4. Interaction avec la branche illégale

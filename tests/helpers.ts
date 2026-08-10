@@ -44,6 +44,22 @@ export function give(state: GameState, resources: Partial<Record<ResourceId, num
   return next;
 }
 
+/**
+ * Débloque la friche comme le ferait la recherche « Remise en culture », mais
+ * sans en payer le prix : les tests du farming portent sur la culture, pas sur
+ * le chemin qui y mène.
+ */
+export function withFarm(state: GameState): GameState {
+  const next = structuredClone(state);
+  if (!next.lab.researched.includes('farm_bp')) next.lab.researched.push('farm_bp');
+  next.farm.plots = [
+    { id: 'plot-1', envDebt: 0, state: { kind: 'empty' } },
+    { id: 'plot-2', envDebt: 0, state: { kind: 'empty' } },
+  ];
+  next.farm.seedStock = { medicinal: 3 };
+  return next;
+}
+
 export function kindsOf(effects: Effect[]): string[] {
   return effects.map((e) => e.kind);
 }

@@ -1,11 +1,13 @@
 /** Actions et bascule quotidienne du module Todos (docs/03). */
 
-import { BALANCE } from '../balance';
+import { BALANCE, payoutUnit } from '../balance';
 import { addRes, drainRes, emit, makeId, type Ctx } from '../core';
+import { RECIPES } from '../data/recipes.data';
+import { effectiveSalePrice, isRecipeAvailable } from '../selectors';
 import { dayKey, startOfDay, type Timestamp } from '../time';
 import type { DayKey, GameState, HabitTodo, RecurringTodo, Todo } from '../../data/schema';
 import type { TodoDraft } from '../actions';
-import { abstinenceBreakPenalty, abstinenceDailyEnergy, counterPenalty, habitThresholds } from './habits';
+import { abstinenceBreakPenalty, abstinenceDailyUnits, counterPenalty, habitThresholds } from './habits';
 import { doneOnDay, dueToday, isScheduledDay, periodChanged, periodKeyFor, requiredForPeriod } from './recurrence';
 
 // ------------------------------------------------------------------ création
@@ -78,18 +80,38 @@ export function applyDraft(todo: Todo, draft: TodoDraft, ctx: Ctx): Todo {
 
 // --------------------------------------------------------------- complétion
 
-/** Énergie de base d'une todo, selon sa difficulté. */
-export function baseEnergy(todo: Todo): number {
-  return BALANCE.energyByDifficulty[todo.difficulty] ?? 1;
+/**
+ * Valeur d'une unité de barème pour cette partie : elle suit le meilleur
+ * produit que l'atelier sait sortir. Une tâche difficile doit rester une somme
+ * qui compte à tous les paliers, sinon cocher une case cesse d'être le moteur
+ * du jeu (docs/02 §4).
+ */
+export function unitValue(state: GameState): number {
+  let best = 0;
+  for (const recipe of RECIPES) {
+    if (recipe.salePrice <= 0 || !isRecipeAvailable(state, recipe.id)) continue;
+    // le prix EFFECTIF, taxe de corruption et pollution comprises : votre heure
+    // ne vaut que ce que l'atelier encaisse réellement, pas ce qu'il affiche
+    const net = effectiveSalePrice(state, recipe);
+    if (net > best) best = net;
+  }
+  return payoutUnit(best);
 }
 
-function creditCompletion(state: GameState, ctx: Ctx, todo: Todo, day: DayKey, energy: number): void {
-  addRes(state, 'energy', energy);
-  state.stats.energyEarnedTotal += energy;
+/** Cachet en ₭ d'une todo, selon sa difficulté et le palier du labo. */
+export function basePayout(state: GameState, todo: Todo): number {
+  const units = BALANCE.payoutByDifficulty[todo.difficulty] ?? 1;
+  return Math.max(1, Math.round(units * unitValue(state)));
+}
+
+function creditCompletion(state: GameState, ctx: Ctx, todo: Todo, day: DayKey, amount: number): void {
+  addRes(state, 'kess', amount);
+  state.stats.kessEarnedTotal += amount;
+  state.stats.kessFromTodos += amount;
   state.stats.todosCompleted += 1;
-  todo.completionHistory.push({ day, energyGained: energy });
+  todo.completionHistory.push({ day, gained: amount });
   if (todo.gain) addRes(state, todo.gain.resource, todo.gain.amount);
-  emit(ctx, { kind: 'energy', amount: energy, todoId: todo.id, title: todo.title });
+  emit(ctx, { kind: 'payout', amount, todoId: todo.id, title: todo.title });
 }
 
 /** Rembourse la perte du jour `day` si elle avait été appliquée (docs/03 §8). */
@@ -108,7 +130,7 @@ export function completeTodo(state: GameState, ctx: Ctx, todo: Todo, at: Timesta
     todo.completedAt = at;
     todo.archived = true;
     refundLossIfAny(state, todo, day);
-    creditCompletion(state, ctx, todo, day, baseEnergy(todo));
+    creditCompletion(state, ctx, todo, day, basePayout(state, todo));
     return true;
   }
 
@@ -116,18 +138,18 @@ export function completeTodo(state: GameState, ctx: Ctx, todo: Todo, at: Timesta
     const remaining = at === ctx.now ? dueToday(todo, at) : 1;
     if (remaining <= 0) return false;
 
-    let energy = baseEnergy(todo);
+    let amount = basePayout(state, todo);
     todo.periodProgress.done += 1;
 
     // bonus de période complète (flexible uniquement)
     if (todo.mode === 'flexible') {
       const required = requiredForPeriod(todo, at);
       if (todo.periodProgress.done === required) {
-        energy = Math.ceil(energy * (1 + BALANCE.flexiblePeriodBonus));
+        amount = Math.ceil(amount * (1 + BALANCE.flexiblePeriodBonus));
       }
     }
     refundLossIfAny(state, todo, day);
-    creditCompletion(state, ctx, todo, day, energy);
+    creditCompletion(state, ctx, todo, day, amount);
     return true;
   }
 
@@ -146,11 +168,11 @@ export function incrementHabit(_state: GameState, _ctx: Ctx, todo: HabitTodo): b
 
 export function breakAbstinence(state: GameState, ctx: Ctx, todo: HabitTodo): boolean {
   if (todo.habitKind !== 'abstinence' || todo.failedToday) return false;
-  const penalty = abstinenceBreakPenalty(todo.streak);
+  const penalty = Math.round(abstinenceBreakPenalty(todo.streak) * unitValue(state));
   todo.failedToday = true;
   todo.streak = 0;
   if (penalty > 0) {
-    const taken = drainRes(state, 'energy', penalty);
+    const taken = drainRes(state, 'kess', penalty);
     emit(ctx, { kind: 'penalty', amount: taken, todoId: todo.id, title: todo.title, reason: 'break' });
   }
   return true;
@@ -235,10 +257,11 @@ function rolloverHabit(state: GameState, ctx: Ctx, todo: HabitTodo, endedDay: Da
     // journée validée par défaut, sans action de l'utilisateur
     todo.streak += 1;
     state.stats.longestStreak = Math.max(state.stats.longestStreak, todo.streak);
-    const energy = abstinenceDailyEnergy(todo.streak);
-    addRes(state, 'energy', energy);
-    state.stats.energyEarnedTotal += energy;
-    todo.completionHistory.push({ day: endedDay, energyGained: energy });
+    const amount = Math.max(1, Math.round(abstinenceDailyUnits(todo.streak) * unitValue(state)));
+    addRes(state, 'kess', amount);
+    state.stats.kessEarnedTotal += amount;
+    state.stats.kessFromTodos += amount;
+    todo.completionHistory.push({ day: endedDay, gained: amount });
     emit(ctx, { kind: 'streak', todoId: todo.id, title: todo.title, streak: todo.streak });
     return;
   }
@@ -246,12 +269,12 @@ function rolloverHabit(state: GameState, ctx: Ctx, todo: HabitTodo, endedDay: Da
   // compteur : score de la journée selon les seuils de l'utilisateur
   const { s1, s2 } = habitThresholds(todo);
   const n = todo.todayCount;
-  const penalty = counterPenalty(n, s1, s2);
+  const penalty = Math.round(counterPenalty(n, s1, s2) * unitValue(state));
   todo.dailyHistory.push({ day: endedDay, count: n, penalty });
   todo.todayCount = 0;
   if (penalty > 0) {
-    const taken = drainRes(state, 'energy', penalty);
-    todo.lastLoss = { day: endedDay, resource: 'energy', amount: taken };
+    const taken = drainRes(state, 'kess', penalty);
+    todo.lastLoss = { day: endedDay, resource: 'kess', amount: taken };
     emit(ctx, { kind: 'penalty', amount: taken, todoId: todo.id, title: todo.title, reason: 'counter' });
   }
 }

@@ -9,7 +9,7 @@ import type { GameState } from '../src/data/schema';
 
 /** Labo complet, branche illégale ouverte, convoyeur actif. */
 function zoneGame(keys: (1 | 2 | 3)[] = [1]): GameState {
-  let s = give(newGame(), { energy: 900, kess: 5000 });
+  let s = give(newGame(), { kess: 40000 });
   s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
   s = doAct(s, { type: 'Research', tech: 'still_bp' });
   s = doAct(s, { type: 'BuildMachine', machine: 'still' });
@@ -23,7 +23,7 @@ function zoneGame(keys: (1 | 2 | 3)[] = [1]): GameState {
 
 describe('1 — clés et taxe permanente', () => {
   it('cumule les taxes et les applique aux ventes légales comme illégales', () => {
-    let s = give(newGame(), { kess: 1000, energy: 900 });
+    let s = give(newGame(), { kess: 40000 });
     s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
     s = doAct(s, { type: 'Research', tech: 'still_bp' });
     s = doAct(s, { type: 'Research', tech: 'adv_synthesis' });
@@ -31,7 +31,7 @@ describe('1 — clés et taxe permanente', () => {
     s = doAct(s, { type: 'BuyKey', key: 2 });
 
     expect(s.corruption.keys).toEqual([1, 2]);
-    expect(s.corruption.taxRate).toBeCloseTo(0.2, 5);
+    expect(s.corruption.taxRate).toBeCloseTo(0.25, 5); // 10 % + 15 %
 
     const noTax = structuredClone(s);
     noTax.corruption.taxRate = 0;
@@ -235,7 +235,7 @@ describe('6 — bandes d\'alignement', () => {
     expect(currentBand(s)).toBe('coop');
 
     // exactement deux ventes illégales nocives : −2 chacune
-    s = give(s, { pa_rec: 4, pa_tox: 2 });
+    s = give(s, { pa_rec: 6, pa_tox: 4 });
     s = doAct(s, { type: 'AssignRecipe', machine: 'synthesizer', recipe: 'active_compound' });
     s = doAct(s, { type: 'StartCycle', machine: 'synthesizer' });
     s = advance(s, 2 * 120 * SEC, { catchUp: false });
@@ -244,7 +244,7 @@ describe('6 — bandes d\'alignement', () => {
     expect(s.alignment.score).toBeCloseTo(27, 5);
     expect(currentBand(s)).toBe('neutral');
     // la commission du Courtier réapparaît
-    expect(effectiveSalePrice(s, getRecipe('tonic'))).toBeCloseTo(10 * 0.8 * 0.85, 2);
+    expect(effectiveSalePrice(s, getRecipe('tonic'))).toBeCloseTo(16 * 0.75 * 0.85, 2);
   });
 });
 

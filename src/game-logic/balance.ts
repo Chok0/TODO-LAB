@@ -7,12 +7,22 @@ import { HOUR, MINUTE, SECOND } from './time';
 
 export const BALANCE = {
   // ---------- Todos & habitudes (docs/02 §4) ----------
-  energyByDifficulty: { 1: 1, 2: 2, 3: 4, 4: 8 } as Record<number, number>,
+  /** Cachet de base d'une tâche, en ₭, selon sa difficulté. */
+  payoutByDifficulty: { 1: 3, 2: 6, 3: 12, 4: 24 } as Record<number, number>,
+  /**
+   * Ce que vaut une heure de votre temps, indexé sur ce que l'atelier sait
+   * produire de mieux : cachet = barème × (meilleur prix de vente accessible ÷
+   * cette référence). Sans indexation, une tâche cochée deviendrait dérisoire
+   * dès la deuxième machine et le pilier du jeu — le travail réel finance le
+   * labo — s'effondrerait. On indexe sur le catalogue plutôt que sur la
+   * trésorerie : le cachet monte par paliers francs, jamais par à-coups.
+   */
+  payoutReference: 11,
   /** Bonus quand toutes les occurrences d'une période flexible sont validées. */
   flexiblePeriodBonus: 0.25,
-  /** EN passif d'une habitude binaire : base + perStreak × streak, plafonné. */
+  /** Rente passive d'une habitude tenue : base + perStreak × streak, plafonnée, en unités de cachet. */
   abstinence: { base: 1, perStreak: 0.1, dailyCap: 3, breakPenaltyPerStreak: 1, breakPenaltyCap: 30 },
-  /** Pénalité d'habitude compteur (docs/02 §4). */
+  /** Pénalité d'habitude compteur (docs/02 §4), en unités de cachet. */
   counter: { lightPerUnit: 1, heavyFactor: 2, heavyExponent: 1.5, dailyCap: 40 },
 
   // ---------- Courbes de coût (docs/02 §5) ----------
@@ -20,15 +30,15 @@ export const BALANCE = {
 
   // ---------- Machines (docs/02 §6) ----------
   machines: {
-    extractor: { baseCycle: 60 * SECOND, research: 10, build: 0, upgrade: 200 },
-    still: { baseCycle: 90 * SECOND, research: 40, build: 60, upgrade: 300 },
-    synthesizer: { baseCycle: 120 * SECOND, research: 80, build: 150, upgrade: 400 },
+    extractor: { baseCycle: 60 * SECOND, research: 20, build: 0, upgrade: 1800 },
+    still: { baseCycle: 90 * SECOND, research: 700, build: 400, upgrade: 2600 },
+    synthesizer: { baseCycle: 120 * SECOND, research: 1400, build: 900, upgrade: 3600 },
   },
   /** durée(Mk) = base × mkSpeedFactor^(Mk-1) */
   mkSpeedFactor: 0.85,
 
   // ---------- Recherches (docs/04 §1) ----------
-  research: { conveyor: 60, catalysis: 120 },
+  research: { farm: 150, conveyor: 300, catalysis: 2600 },
   catalysisSaleBonus: 0.1,
   /** Réduction des coûts de R&D restants quand la subvention est active. */
   subsidyResearchDiscount: 0.2,
@@ -38,11 +48,30 @@ export const BALANCE = {
     lab: { dirtySpeedGain: 0.25, dirtyPollutionPerCycle: 0.005 },
     farm: { agroSeedFactor: 1.2, agroDurationFactor: 1.2, agroDebtPerHarvest: -0.01, intensiveYieldFactor: 1.5, intensiveDebtPerHarvest: 0.02 },
   },
-  pollution: { max: 0.5, cleanCostEnergy: 5, cleanAmount: 0.05 },
+  pollution: { max: 0.5, cleanCost: 120, cleanAmount: 0.05 },
   envDebt: { max: 0.8, fallowPerHour: -0.02 },
 
   // ---------- Farming (docs/05 §1) ----------
-  farm: { startingPlots: 2, maxPlots: 5, plotCosts: [100, 250, 600] },
+  farm: { startingPlots: 2, maxPlots: 5, plotCosts: [400, 900, 1800] },
+
+  /**
+   * Le Fournisseur (docs/05 §0) : avant la remise en culture, les récoltes
+   * s'achètent. Le prix est un multiple du coût d'une graine ramené à l'unité,
+   * de sorte que cultiver reste toujours nettement moins cher — c'est la
+   * récompense du déblocage, et non un simple changement d'écran.
+   */
+  supply: {
+    markup: 2.6,
+    minPrice: 2,
+    /**
+     * Ce que la Zone laisse passer en un jour. Sans ce plafond, acheter serait
+     * illimité et cultiver n'aurait aucun intérêt : le quota est ce qui fait de
+     * la remise en culture un vrai palier et non un simple changement d'écran.
+     */
+    dailyQuota: 12,
+    /** Chaque parcelle exploitée assouplit un peu le quota (docs/05 §0). */
+    quotaPerPlot: 3,
+  },
 
   // ---------- Ventes & bandes (docs/02 §9) ----------
   brokerCommission: 0.15,
@@ -55,9 +84,9 @@ export const BALANCE = {
 
   // ---------- Corruption (docs/02 §10, docs/06) ----------
   corruptionKeys: [
-    { key: 1 as const, price: 100, tax: 0.08 },
-    { key: 2 as const, price: 400, tax: 0.12 },
-    { key: 3 as const, price: 1600, tax: 0.15 },
+    { key: 1 as const, price: 300, tax: 0.1 },
+    { key: 2 as const, price: 1200, tax: 0.15 },
+    { key: 3 as const, price: 3600, tax: 0.2 },
   ],
   events: {
     baseChance: 1 / 17,
@@ -103,7 +132,8 @@ export const BALANCE = {
   catchUpThreshold: 90 * SECOND,
 
   // ---------- Démarrage (DEC-10) ----------
-  start: { openingDebt: 500, seeds: { medicinal: 3 } },
+  /** `kess` : de quoi acheter les premiers intrants avant la première tâche cochée. */
+  start: { openingDebt: 500, kess: 35, seedsOnFarmUnlock: { medicinal: 3 } },
 
   // ---------- Narratif (docs/07 §4) ----------
   letters: { maxPerDay: 2, freshnessPenalty: 4, freshnessDays: 10 },
@@ -117,6 +147,18 @@ export const BALANCE = {
   autosaveDebounce: 2 * SECOND,
   autosaveInterval: 30 * SECOND,
 } as const;
+
+/**
+ * Valeur d'une « unité de cachet » pour un catalogue donné. Toute rémunération
+ * et toute pénalité du module Todos est exprimée en unités, puis multipliée
+ * ici — un seul endroit à régler.
+ *
+ * `bestSalePrice` : le meilleur prix de vente d'une recette réellement
+ * accessible au joueur (cf. `unitValue` dans todos.ts).
+ */
+export function payoutUnit(bestSalePrice: number): number {
+  return Math.max(1, bestSalePrice / BALANCE.payoutReference);
+}
 
 /** cost(n) = ceil(base × 1.12^n) — docs/02 §5. */
 export function scaledCost(base: number, owned: number): number {

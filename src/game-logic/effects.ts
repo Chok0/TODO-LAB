@@ -6,7 +6,7 @@
 import type { Band, MachineTemplateId, PlantId, RecipeId, Texture, TechId, PaymentMode } from '../data/schema';
 
 export type Effect =
-  | { kind: 'energy'; amount: number; todoId: string; title: string }
+  | { kind: 'payout'; amount: number; todoId: string; title: string }
   | { kind: 'penalty'; amount: number; todoId: string; title: string; reason: 'miss' | 'break' | 'counter' }
   | { kind: 'streak'; todoId: string; title: string; streak: number }
   | { kind: 'research'; tech: TechId; label: string }
@@ -19,6 +19,8 @@ export type Effect =
   | { kind: 'contract_failed'; pnj: string }
   | { kind: 'seizure'; lost: string }
   | { kind: 'harvest'; plot: string; plant: PlantId; amount: number }
+  | { kind: 'supply_bought'; plant: PlantId; amount: number; cost: number }
+  | { kind: 'farm_unlocked'; plots: number }
   | { kind: 'planted'; plot: string; plant: PlantId; method: 'agro' | 'intensive' }
   | { kind: 'texture'; texture: Texture; recipe: RecipeId }
   | { kind: 'key_bought'; key: number; tax: number }
@@ -42,10 +44,10 @@ const f = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 /** Rendu d'un effet dans le Registre du Log. `null` = non journalisé. */
 export function renderEffect(e: Effect): RegistryRender | null {
   switch (e.kind) {
-    case 'energy':
-      return { text: `${e.title} — +${f(e.amount)} EN`, tone: 'good' };
+    case 'payout':
+      return { text: `${e.title} — +${f(e.amount)} ₭`, tone: 'good' };
     case 'penalty':
-      return { text: `${e.title} — −${f(e.amount)} EN`, tone: 'bad' };
+      return { text: `${e.title} — −${f(e.amount)} ₭`, tone: 'bad' };
     case 'streak':
       return e.streak > 0 && e.streak % 7 === 0
         ? { text: `${e.title} — ${e.streak} jours de suite`, tone: 'good' }
@@ -68,6 +70,10 @@ export function renderEffect(e: Effect): RegistryRender | null {
       return { text: `Saisie : ${e.lost}`, tone: 'bad' };
     case 'harvest':
       return { text: `Récolte — ${e.amount} unité(s)`, tone: 'good' };
+    case 'supply_bought':
+      return { text: `Fournisseur — ${e.amount} unité(s) pour ${f(e.cost)} ₭`, tone: 'neutral' };
+    case 'farm_unlocked':
+      return { text: `La friche est remise en culture — ${e.plots} parcelles`, tone: 'good' };
     case 'key_bought':
       return { text: `Arrangement conclu — taxe permanente portée à ${Math.round(e.tax * 100)} %`, tone: 'bad' };
     case 'event_triggered':

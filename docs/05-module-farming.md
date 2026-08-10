@@ -2,9 +2,32 @@
 
 Fournit les intrants du labo. Boucle : **plantation → croissance (idle, durée fixe) → récolte → extraction (labo) → principes actifs**.
 
+## 0. Avant le farming : le Fournisseur (DEC-16)
+
+La friche de l'oncle est **en jachère au départ** : aucune parcelle, aucune
+graine. Les intrants s'achètent au comptant chez le Fournisseur, et le farming
+s'ouvre par la recherche **« Remise en culture » (150 ₭)**, qui livre les deux
+premières parcelles et trois graines médicinales.
+
+Ce n'est pas un simple verrou d'écran, c'est un palier économique. Les chiffres
+sont en `02` §7b ; les trois règles qui le tiennent :
+
+| Règle | Pourquoi |
+|---|---|
+| Prix d'achat = 2,6 × le coût de la même unité cultivée, **dérivé** du coût de la graine | Cultiver reste toujours nettement moins cher, sans qu'aucune valeur puisse dériver de l'autre |
+| **Quota quotidien** : 12 unités + 3 par parcelle, rechargé à minuit | Sans plafond, acheter serait illimité et cultiver n'aurait aucun intérêt. C'est le quota, pas le prix, qui rend le déblocage désirable |
+| Étal **fermé tant qu'aucune machine n'est montée**, et limité aux plantes qu'on saurait cultiver | On ne peut pas dilapider sa mise de départ en matière qu'on ne peut pas traiter |
+
+Après le déblocage, l'étal reste ouvert : il sert d'appoint quand les parcelles
+n'ont pas suivi, et chaque parcelle assouplit un peu le quota — un atelier qui
+produit sa propre matière inspire davantage confiance à la Zone.
+
+Le moteur refuse l'achat **et** la plantation hors de ces conditions, pas
+seulement l'UI (`buySupply`, `plant`).
+
 ## 1. Parcelles
 
-- Départ : **2 parcelles**. Achats suivants : 100 ₭, 250 ₭, 600 ₭ (max **5 parcelles** en V1) — courbe ~×1.12 appliquée à des paliers arrondis.
+- Départ : **aucune parcelle** tant que la remise en culture n'est pas payée ; elle en livre **2**. Achats suivants : 400 ₭, 900 ₭, 1800 ₭ (max **5 parcelles** en V1) — courbe ~×1.12 appliquée à des paliers arrondis.
 - États d'une parcelle : `empty` (vide), `growing` (plante + timestamp de fin), `ready` (récolte disponible), `fallow` (jachère, se régénère).
 - Chaque parcelle porte sa propre **dette environnementale** (0–80 %).
 
@@ -12,10 +35,15 @@ Fournit les intrants du labo. Boucle : **plantation → croissance (idle, durée
 
 | Template | Graine (₭) | Croissance | Récoltes/cycle | PA produit | Tag Fin | Déblocage |
 |---|---|---|---|---|---|---|
-| Médicinale | 5 (3 offertes au départ, DEC-10) | 20 min | 3 | PA_MED | bénéfique | — |
-| Industrielle | 8 | 35 min | 2 | PA_IND | neutre | Distillateur construit |
-| Récréative | 12 | 45 min | 3 | PA_REC | neutre | Synthétiseur construit |
-| Toxique | 25 | 60 min | 2 | PA_TOX | nocif | Clé de corruption 1 |
+| Médicinale | 5 (3 offertes à la remise en culture) | 3 h | 3 | PA_MED | bénéfique | — |
+| Industrielle | 8 | 6 h | 2 | PA_IND | neutre | Distillateur construit |
+| Récréative | 12 | 10 h | 3 | PA_REC | neutre | Synthétiseur construit |
+| Toxique | 25 | 14 h | 2 | PA_TOX | nocif | Clé de corruption 1 |
+
+Les durées se comptent en **heures**, pas en minutes : le jeu est un widget
+qu'on consulte quelques fois par jour, pas une fenêtre qu'on surveille. Une
+culture prête toutes les vingt minutes n'est jamais prête au moment où l'on
+regarde ; une culture de trois heures l'est à chaque passage.
 
 Le rendement affiché est le rendement de base, modulé par la méthode et la dette : `récoltes = round(base × modificateur_méthode × (1 − DEBT_ENV))`, minimum 1.
 
@@ -54,9 +82,19 @@ Deuxième source d'intrants : minerais à propriétés chimiques (catalyseurs, s
 
 ## 8. Scénarios de test (obligatoires)
 
-1. Plantation médicinale intensive : fin à `t+20min`, 3 récoltes (2×1.5), dette +2 %.
-2. Dette 30 % : rendement intensif = round(2×1.5×0.7) = 2 ; la dette continue de monter.
-3. Agroécologie avec dette 10 % : coût graine ×1.5, durée 24 min, dette 9 % après récolte.
+1. Plantation médicinale intensive : fin à `t+3h`, 5 récoltes (3×1.5), dette +2 %.
+2. Dette 30 % : rendement intensif = round(3×1.5×0.7) = 3 ; la dette continue de monter.
+3. Agroécologie avec dette 10 % : coût graine ×1.2, durée 3,6 h, dette 9 % après récolte.
 4. Jachère 5 h sur dette 12 % : dette 2 % ; remise en culture possible à tout moment.
-5. Offline 8 h : plante de 45 min plantée avant fermeture → `ready` au retour (pas de plafond sur la croissance, DEC-11).
+5. Offline 12 h : plante plantée avant fermeture → `ready` au retour (pas de plafond sur la croissance, DEC-11).
 6. Graine toxique invisible et inachetable sans Clé 1, y compris par manipulation d'état (le moteur refuse l'action, pas seulement l'UI).
+7. Friche verrouillée : aucune parcelle au départ, et une parcelle injectée de force dans l'état ne permet toujours pas de semer. La recherche livre 2 parcelles + 3 graines.
+8. Fournisseur : achat tronqué au quota (jamais dépassé silencieusement), quota rechargé à minuit, toxique refusée sans clé, et prix d'achat strictement supérieur au coût de la même unité cultivée pour les quatre plantes.
+
+### Le garde-fou anti-blocage a disparu — volontairement
+
+La V1 accordait une bouture de secours quand la partie n'avait plus ni graine,
+ni trésorerie, ni cycle en cours. Avec une monnaie unique, ce cas n'existe plus :
+cocher n'importe quelle tâche produit des ₭, et l'étal du Fournisseur vend à
+partir de 5 ₭. Le code de rattrapage a donc été retiré plutôt que conservé
+« au cas où » — un chemin jamais emprunté est un chemin jamais testé.

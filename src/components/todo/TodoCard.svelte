@@ -2,9 +2,9 @@
   /** Carte todo : fond teinté par catégorie, bordure/icône par type (docs/11 §4). */
   import type { Todo } from '../../data/schema';
   import { recurrenceIcon, recurrenceLabel, remainingToday } from '../../game-logic/todos/views';
-  import { baseEnergy } from '../../game-logic/todos/todos';
+  import { basePayout } from '../../game-logic/todos/todos';
   import { relativeDayLabel } from '../../game-logic/time';
-  import { dispatch, nowStore } from '../../stores/game';
+  import { dispatch, game, nowStore } from '../../stores/game';
   import { FR } from '../../i18n/fr';
   import Icon from '../Icon.svelte';
 
@@ -46,7 +46,7 @@
   </button>
 
   <span class="right">
-    <span class="energy tiny mono">+{baseEnergy(todo)}</span>
+    <span class="payout tiny mono">+{basePayout($game, todo)} ₭</span>
     <span class="dots" aria-label={`difficulté ${todo.difficulty}`}>
       {#each Array(todo.difficulty) as _, i (i)}<i></i>{/each}
     </span>
@@ -129,8 +129,8 @@
     gap: 3px;
   }
 
-  .energy {
-    color: var(--energy);
+  .payout {
+    color: var(--kess);
   }
 
   .dots {

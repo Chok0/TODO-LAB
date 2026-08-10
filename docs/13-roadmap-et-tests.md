@@ -15,13 +15,13 @@ Séquence de goals pour l'agent d'implémentation. Chaque goal se termine sur un
 
 ## Goal 1 — Squelette Tauri + module Todos complet
 
-**Périmètre** : app Tauri qui démarre (fenêtre colonne transparente always-on-top, tray, single-instance, masquer≠quitter) ; composant `Panel` repliable réutilisable (`11` §3) ; colonne todo complète : 3 types (ponctuelle / récurrente / habitude binaire + compteur), quick-add avec parseur par règles et chips, code couleur catégorie + type, groupes Aujourd'hui/Semaine/Plus tard, panneau Habitudes replié par défaut ; moteur `applyAction`/`advanceTime` (périmètre todos : EN, minuits, streaks, pénalités) ; persistance atomique Rust + autosave + migrations v1 ; undo 10 s.
+**Périmètre** : app Tauri qui démarre (fenêtre colonne transparente always-on-top, tray, single-instance, masquer≠quitter) ; composant `Panel` repliable réutilisable (`11` §3) ; colonne todo complète : 3 types (ponctuelle / récurrente / habitude binaire + compteur), quick-add avec parseur par règles et chips, code couleur catégorie + type, groupes Aujourd'hui/Semaine/Plus tard, panneau Habitudes replié par défaut ; moteur `applyAction`/`advanceTime` (périmètre todos : cachet, minuits, streaks, pénalités) ; persistance atomique Rust + autosave + migrations v1 ; undo 10 s.
 
-**Hors périmètre** : tout le reste du jeu (le solde d'EN s'accumule, c'est tout). Icônes provisoires acceptées (formes basiques), pas le design system.
+**Hors périmètre** : tout le reste du jeu (la trésorerie s'accumule, c'est tout). Icônes provisoires acceptées (formes basiques), pas le design system.
 
 **Critères d'acceptation** :
 1. `npm test` vert — suites : moteur de récurrence (8 scénarios de `03` §8), parseur (8 cas de `03` §4.4), pénalités/streaks (`02` §4), `cargo test` persistance (écriture atomique + récupération backup).
-2. Démonstration console (script `npm run sim -- --days 5 --seed 42`) : simulation de 5 jours avec todos variées → solde d'EN final exact et reproductible.
+2. Démonstration console (script `npm run sim -- --days 5 --seed 42`) : simulation de 5 jours avec todos variées → trésorerie finale exacte et reproductible.
 3. Capture d'écran : colonne avec les 3 types visibles, chips du parseur sur une saisie type, panneau Habitudes replié.
 4. Relance de l'app : todos et solde persistés, panneau Habitudes de nouveau replié même s'il était déplié.
 
@@ -31,7 +31,7 @@ Séquence de goals pour l'agent d'implémentation. Chaque goal se termine sur un
 
 **Critères d'acceptation** :
 1. Suites Vitest : `04` §7 (scénarios 1-7 hors corruption), `05` §8 (1-6), courbes de coût, offline (20 h → 12 h créditées).
-2. `npm run sim -- --days 14 --seed 42 --strategy legal` : sortie tabulaire jour par jour (EN, ₭, machines, dette) conforme à la courbe cible de `02` §13 (±20 %).
+2. `npm run sim -- --days 14 --seed 42 --strategy legal` : sortie tabulaire jour par jour (₭ cumulés, part todos / part production, machines, dette) conforme à la courbe cible de `02` §13 (±20 %).
 3. Couverture ≥ 90 % sur `/src/game-logic` (hors data).
 
 ## Goal 3 — Branche illégale, corruption, alignement, texture

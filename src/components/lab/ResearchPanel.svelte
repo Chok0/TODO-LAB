@@ -14,12 +14,12 @@
     {@const done = isTechResearched(state, node.id)}
     {@const available = isTechAvailable(state, node.id)}
     {@const cost = researchCost(state, node.id)}
-    {@const affordable = state.resources.energy >= cost}
+    {@const affordable = state.resources.kess >= cost}
     <div class="node" class:done class:available class:locked={!done && !available}>
       <div class="line">
         <span class="icon">
           {#if done}<Icon name="check" size={13} tone="var(--ok)" />
-          {:else if available}<Icon name="energy" size={13} tone="var(--energy)" />
+          {:else if available}<Icon name="kess" size={13} tone="var(--kess)" />
           {:else}<Icon name="lock" size={13} />{/if}
         </span>
         <span class="label">{node.label}</span>
@@ -30,9 +30,9 @@
             disabled={!available || !affordable}
             on:click={() => dispatch({ type: 'Research', tech: node.id })}
           >
-            {cost} EN
+            {cost} ₭
             {#if available && !affordable}
-              <span class="dim">· {Math.ceil(cost - state.resources.energy)} {FR.event.cannotAfford}</span>
+              <span class="dim">· {Math.ceil(cost - state.resources.kess)} {FR.event.cannotAfford}</span>
             {/if}
           </button>
         {/if}

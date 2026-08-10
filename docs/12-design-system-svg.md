@@ -37,7 +37,7 @@ Toutes les couleurs de l'app viennent d'ici — aucun hex ailleurs (règle lint 
 
   /* sémantique */
   --ok: #7fb069;  --warn: #d9a441;  --danger: #a4243b;
-  --energy: #e9c46a;          /* Énergie */
+  --supply: #e9c46a;          /* Fournisseur, caisses */
   --kess: #b08d3e;            /* monnaie */
 
   /* géométrie */
@@ -67,7 +67,7 @@ Fichiers `.woff2` téléchargés depuis Google Fonts **au moment du build initia
 
 - Grille **24×24**, stroke **2 px**, `stroke-linecap/linejoin: round`, coins arrondis rayon 2, style outline ; remplissages réservés aux accents d'état (couleur du module).
 - Icônes lisibles à 16 px (test : chaque icône rendue à 16 px doit rester identifiable).
-- **Set UI (12)** : todo/check, plus, chevron, épingle (pin), engrenage (réglages), cadenas, éclair (EN), pièce (₭), goutte (propre), fumée (dégradant), enveloppe, alerte.
+- **Set UI (12)** : todo/check, plus, chevron, épingle (niveau de fenêtre), engrenage (réglages), cadenas, chariot (Fournisseur), pièce (₭), goutte (propre), fumée (dégradant), enveloppe, alerte.
 - **Set récurrence (5)** : ponctuelle (point), fixe (calendrier), flexible (vague), abstinence (bouclier), compteur (barres).
 - **Set ressources (8)** : récolte, PA (fiole), produit (caisse), réputation (poignée de main), clé de corruption, dette (jauge fendue), pollution (nuage), streak (flamme).
 - Wrapper Svelte `Icon.svelte` : `<Icon name size tone />`, SVG inline (pas de sprite externe), `currentColor` par défaut.
@@ -92,7 +92,7 @@ Un dessin de base par **stade** (4 : semis, pousse, mature, prêt-à-récolter) 
 |---|---|---|
 | Machine `running` | rotation d'engrenage / bulles de cuve (2-3 éléments max) | boucle 2-4 s |
 | Jauge de cycle | remplissage linéaire piloté par la vraie progression (custom property mise à jour au tick) | continue |
-| Complétion de todo | check qui se dessine (stroke-dashoffset) + flottant `+X EN` qui monte et s'estompe | 400 ms |
+| Complétion de todo | check qui se dessine (stroke-dashoffset) + flottant `+X ₭` qui monte et s'estompe | 400 ms |
 | Récolte | 3-5 particules simples | 500 ms |
 | Repli de panneau | hauteur ease-out | 150 ms |
 | Lettre non lue | pastille — pulsation lente unique puis statique | 2 s puis stop |
@@ -123,3 +123,22 @@ Les composants machines/plantes prennent leurs états en props (`mk`, `state`, `
 6. Animations et raffinements.
 
 Critère de cohérence final : une capture de l'app complète doit donner l'impression d'**un seul illustrateur** — même stroke, même palette, même géométrie partout.
+
+## 12. Cohabiter avec un décor peint (docs/14)
+
+Le bandeau atelier peut recevoir une image de fond générée. Elle est produite
+**hors du dépôt** : rien ne garantit sa luminance. Trois règles en découlent, à
+respecter pour tout élément posé dans la scène :
+
+1. **Les rangées de texte sont protégées par le voile** — titres de station en
+   haut, légendes sous la ligne de sol. N'y placez rien qui dépende d'un fond
+   clair.
+2. **Tout texte au milieu de la scène porte son propre fond.** C'est le cas du
+   message de l'établi vide, des pastilles et du tableau des Compteurs. Un
+   nouveau texte à cet endroit doit faire de même.
+3. **Les tracés SVG décoratifs** (panneau à outils, silhouettes) peuvent
+   disparaître sur un décor clair : ils sont décoratifs, jamais informatifs.
+   Aucun état de jeu ne doit se lire uniquement dans le décor.
+
+Vérification : `docs/14` §5 décrit le test de borne — on rend le bandeau avec un
+décor entièrement blanc et on mesure le contraste sous chaque rangée de texte.

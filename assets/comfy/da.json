@@ -1,0 +1,65 @@
+{
+  "_commentaire": [
+    "La direction artistique du jeu, sous forme exécutable.",
+    "Chaque entrée est un visuel à produire : node scripts/comfy.mjs --da [id]",
+    "",
+    "Les seeds sont FIGÉES : c'est ce qui rend la DA reproductible. Changez-en une",
+    "pour explorer, gardez-la dès que le résultat vous convient — sinon vous ne",
+    "saurez plus refaire l'image que vous avez retenue.",
+    "",
+    "Ce qui n'est PAS ici est un choix, pas un oubli : les machines, les plantes et",
+    "les icônes restent en SVG écrit à la main. Elles portent des états (idle /",
+    "running / bloqué, 4 stades de croissance), se teintent par variable CSS et",
+    "doivent rester nettes à toutes les densités. Voir docs/14 §4."
+  ],
+
+  "_style": {
+    "_commentaire": "Suffixe collé à chaque prompt : c'est lui qui tient la cohérence de la série.",
+    "suffixe": "atelier abandonné qu'on rallume, zone franche post-industrielle, palette froide désaturée, sarcelle et acier, bois usé, nuit, lumière rasante d'une seule source, grain photographique léger, aucune présence humaine",
+    "negatif": "personnage, visage, main, foule, texte, lettres, chiffres, watermark, signature, logo, néon saturé, cyberpunk, rose, violet fluo, HDR, sur-contrasté, rendu 3D lisse, cartoon"
+  },
+
+  "backdrop": {
+    "_role": "Décor du bandeau atelier : mur, sol, profondeur. Passe SOUS la scène SVG.",
+    "prompt": "intérieur d'un ancien atelier de facteur d'instruments reconverti en laboratoire, mur de brique sombre et plâtre écaillé, sol de béton usé, grande fenêtre à petits carreaux sur la gauche, poussière dans la lumière, vue frontale à hauteur d'établi, composition très horizontale et vide au centre",
+    "width": 1216,
+    "height": 256,
+    "seed": 20260810,
+    "prefix": "kessler-backdrop",
+    "cible": "src/assets/generated/atelier-backdrop.png",
+    "_note": "Vide au centre : la scène SVG (caisses, cultures, établi, machines) vient s'y poser. Un décor chargé rendrait l'interface illisible."
+  },
+
+  "papier": {
+    "_role": "Fond du panneau Correspondance : papier de la Zone, tuilable.",
+    "prompt": "texture de papier administratif ancien, fibres visibles, légèrement jauni et taché d'humidité, plié une fois, éclairage frontal neutre, macro, à plat",
+    "width": 768,
+    "height": 768,
+    "seed": 20260811,
+    "prefix": "kessler-papier",
+    "cible": "src/assets/generated/papier-lettre.png",
+    "_note": "Sert en fond très atténué (opacité ~8 %) derrière le texte des lettres : c'est de la matière, jamais du contenu."
+  },
+
+  "icone": {
+    "_role": "Icône de l'application et de la barre système.",
+    "prompt": "fiole de laboratoire en verre épais posée sur un établi de bois, liquide sarcelle lumineux, fond très sombre uni, cadrage carré centré, objet unique, éclairage latéral doux, style pictogramme photographique",
+    "width": 512,
+    "height": 512,
+    "seed": 20260812,
+    "prefix": "kessler-icone",
+    "cible": "src/assets/generated/icone-source.png",
+    "_note": "Image SOURCE, pas l'icône finale : à détourer et décliner aux tailles imposées par l'OS (32, 128, 256, .ico, .icns) avant de remplacer src-tauri/icons/."
+  },
+
+  "reference-machines": {
+    "_role": "Planche de référence à TRACER en SVG — jamais intégrée telle quelle.",
+    "prompt": "planche d'étude technique de trois appareils de laboratoire artisanaux posés sur un établi : un extracteur à colonne de verre, un alambic de cuivre, un synthétiseur d'acier à tuyaux, vue de face, fond neutre, éclairage d'atelier, style illustration technique",
+    "width": 1024,
+    "height": 640,
+    "seed": 20260813,
+    "prefix": "kessler-ref-machines",
+    "cible": "src/assets/generated/reference-machines.png",
+    "_note": "Sur un projet où la cohérence de trait compte plus que le détail, générer puis redessiner donne un meilleur résultat qu'intégrer directement. Cette image ne part pas dans le bundle."
+  }
+}

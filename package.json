@@ -15,7 +15,8 @@
     "tauri": "tauri",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "verify": "npm run check && npm test && npm run test:rust && npm run build",
-    "build:single": "npm run build && node scripts/build-single-file.mjs"
+    "build:single": "npm run build && node scripts/build-single-file.mjs",
+    "comfy": "node scripts/comfy.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.3",

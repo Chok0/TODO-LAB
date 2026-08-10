@@ -45,8 +45,16 @@ export function currentZone(): Zone {
   return zone;
 }
 
-/** Seul l'hôte fait avancer le temps et sauvegarde. */
+/**
+ * Seul l'hôte fait avancer le temps et sauvegarde.
+ *
+ * Hors Tauri il n'y a pas de seconde fenêtre à écouter : la page est toujours
+ * hôte, y compris quand on l'ouvre sur `?zone=atelier` pour prévisualiser le
+ * bandeau seul — sinon cette vue attendrait indéfiniment un état que personne
+ * ne diffuse.
+ */
 export function isHost(): boolean {
+  if (!isTauri()) return true;
   return currentZone() !== 'atelier';
 }
 

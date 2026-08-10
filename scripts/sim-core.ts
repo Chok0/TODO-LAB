@@ -22,11 +22,13 @@ import {
   nextPlotCost,
   researchCost,
   seedCost,
+  supplyPrice,
+  supplyRemaining,
 } from '../src/game-logic/selectors';
 import { dayKey, DAY, MINUTE } from '../src/game-logic/time';
 import type { GameState, PlantId, RecipeId, TechId } from '../src/data/schema';
 
-export type Strategy = 'legal' | 'illegal' | 'mixed';
+export type Strategy = 'legal' | 'illegal' | 'mixed' | 'idle';
 
 // ------------------------------------------------------------------- options
 
@@ -35,20 +37,23 @@ export const START = new Date(2026, 0, 5, 8, 0, 0, 0).getTime(); // lundi 8 h
 /** Le widget est consulté par sessions courtes, pas 24 h/24 (docs/01 §5). */
 const SESSION_HOURS = [8, 10, 12, 14, 16, 18, 20, 22];
 /** Réserve gardée pour pouvoir toujours racheter des graines. */
-const RESERVE = 60;
+const RESERVE = 40;
 
 // --------------------------------------------------------------------- bot
 
 const RESEARCH_ORDER: Record<Strategy, TechId[]> = {
-  legal: ['extractor_bp', 'still_bp', 'conveyor', 'adv_synthesis', 'catalysis'], // adv_synthesis n'est qu'un prérequis de catalyse
-  illegal: ['extractor_bp', 'still_bp', 'adv_synthesis', 'conveyor', 'catalysis'],
-  mixed: ['extractor_bp', 'still_bp', 'conveyor', 'adv_synthesis', 'catalysis'],
+  legal: ['extractor_bp', 'farm_bp', 'conveyor', 'still_bp', 'adv_synthesis', 'catalysis'], // adv_synthesis n'est qu'un prérequis de catalyse
+  illegal: ['extractor_bp', 'farm_bp', 'conveyor', 'still_bp', 'adv_synthesis', 'catalysis'], // still_bp est un prérequis de la synthèse
+  mixed: ['extractor_bp', 'farm_bp', 'conveyor', 'still_bp', 'adv_synthesis', 'catalysis'],
+  /** Le joueur qui ne coche jamais rien : sert à vérifier que les todos comptent. */
+  idle: ['extractor_bp', 'farm_bp', 'conveyor', 'still_bp', 'adv_synthesis', 'catalysis'],
 };
 
 const PLANT_PREFERENCE: Record<Strategy, PlantId[]> = {
   legal: ['medicinal', 'industrial'],  // arbitrées par plantToSow selon le besoin réel
   illegal: ['toxic', 'recreational', 'medicinal', 'industrial'],
   mixed: ['recreational', 'toxic', 'medicinal', 'industrial'],
+  idle: ['medicinal', 'industrial'],
 };
 
 let state: GameState;
@@ -70,14 +75,8 @@ function bestRecipe(machine: 'extractor' | 'still' | 'synthesizer', _strategy: S
   const candidates = RECIPES.filter((r) => r.machine === machine && isRecipeAvailable(state, r.id));
 
   if (machine === 'extractor') {
-    // 1. raffiner les récoltes en attente, la plus abondante d'abord
-    const pending = candidates
-      .filter((r) => r.output && hasInputs(state, r))
-      .sort((a, b) => (state.resources[b.inputs[0].resource] ?? 0) - (state.resources[a.inputs[0].resource] ?? 0));
-    if (pending.length) return pending[0].id;
-
-    // 2. plus rien à raffiner : écouler le surplus de pa_med en toniques quand
-    //    la machine aval est à l'arrêt faute d'intrants
+    // 1. écouler le pa_med en toniques quand l'aval est à l'arrêt faute
+    //    d'intrants — ou qu'il n'y a pas encore de machine en aval du tout.
     const tonic = RECIPES.find((r) => r.id === 'tonic')!;
     if (hasInputs(state, tonic)) {
       const downstream = (['still', 'synthesizer'] as const)
@@ -86,6 +85,11 @@ function bestRecipe(machine: 'extractor' | 'still' | 'synthesizer', _strategy: S
       const anyRunnable = downstream.some((r) => r && hasInputs(state, r));
       if (!anyRunnable || (state.resources.pa_med ?? 0) >= 8) return 'tonic';
     }
+    // 2. sinon raffiner les récoltes en attente, la plus abondante d'abord
+    const pending = candidates
+      .filter((r) => r.output && hasInputs(state, r))
+      .sort((a, b) => (state.resources[b.inputs[0].resource] ?? 0) - (state.resources[a.inputs[0].resource] ?? 0));
+    if (pending.length) return pending[0].id;
     return candidates.find((r) => r.output)?.id ?? null;
   }
 
@@ -116,6 +120,36 @@ function plantToSow(strategy: Strategy): PlantId | null {
     }
   }
   return worst ?? unlocked[0];
+}
+
+/**
+ * Achats au Fournisseur. Le bot ne stocke pas : il comble le manque de la
+ * récolte dont dépend la recette visée, dans la limite du quota et sans
+ * descendre sous la réserve. C'est ce qui rend jouable le début de partie,
+ * avant la remise en culture.
+ */
+function buyMissingInputs(strategy: Strategy, now: number): void {
+  if (!machineOf(state, 'extractor')) return;
+
+  for (let guard = 0; guard < 4; guard++) {
+    if (supplyRemaining(state) <= 0) return;
+
+    const choice = plantToSow(strategy);
+    if (!choice) return;
+    const plant = getPlant(choice);
+
+    // déjà de quoi occuper l'extracteur : inutile d'acheter
+    if ((state.resources[plant.harvest] ?? 0) >= 4) return;
+
+    const unit = supplyPrice(choice);
+    const budget = state.resources.kess - RESERVE;
+    const affordable = Math.floor(budget / unit);
+    if (affordable <= 0) return;
+
+    const amount = Math.min(affordable, supplyRemaining(state), 4);
+    if (amount <= 0) return;
+    act({ type: 'BuySupply', plant: choice, amount }, now);
+  }
 }
 
 function playTurn(now: number, strategy: Strategy): void {
@@ -161,16 +195,20 @@ function playTurn(now: number, strategy: Strategy): void {
     }
   }
 
+  // 3bis. compléter au Fournisseur ce que les parcelles ne fournissent pas
+  buyMissingInputs(strategy, now);
+
   // 4. recherche
   for (const tech of RESEARCH_ORDER[strategy]) {
     if (state.lab.researched.includes(tech)) continue;
     const node = TECH_TREE.find((t) => t.id === tech)!;
     if (!node.requires.every((r) => state.lab.researched.includes(r))) break;
-    if (state.resources.energy >= researchCost(state, tech)) act({ type: 'Research', tech }, now);
+    if (state.resources.kess >= researchCost(state, tech) + RESERVE) act({ type: 'Research', tech }, now);
     break;
   }
 
   // 5. construction (la voie légale n'a pas d'usage d'un synthétiseur)
+  // la voie légale n'a aucun usage d'un synthétiseur
   const buildable = strategy === 'legal' ? (['still'] as const) : (['still', 'synthesizer'] as const);
   for (const machine of buildable) {
     if (machineOf(state, machine)) continue;
@@ -183,7 +221,8 @@ function playTurn(now: number, strategy: Strategy): void {
   if (strategy !== 'legal' && state.lab.researched.includes('adv_synthesis')) {
     const key = nextKey(state);
     const limit = strategy === 'mixed' ? 1 : 3;
-    if (key && key.key <= limit && state.resources.kess >= key.price * 2 + RESERVE) {
+    const margin = strategy === 'illegal' ? 1.2 : 2;
+    if (key && key.key <= limit && state.resources.kess >= key.price * margin + RESERVE) {
       act({ type: 'BuyKey', key: key.key }, now);
     }
   }
@@ -198,7 +237,9 @@ function playTurn(now: number, strategy: Strategy): void {
   }
 
   // 8. nettoyage de l'atelier
-  if (state.lab.pollution >= 0.15 && state.resources.energy >= 40) act({ type: 'CleanLab' }, now);
+  if (state.lab.pollution >= 0.15 && state.resources.kess >= BALANCE.pollution.cleanCost + RESERVE) {
+    act({ type: 'CleanLab' }, now);
+  }
 
   // 9. améliorations, parcelles, dette
   if (state.lab.researched.includes('catalysis')) {
@@ -223,9 +264,12 @@ function playTurn(now: number, strategy: Strategy): void {
 
 export interface DayRow {
   day: number;
-  energy: number;
   kess: number;
   kessTotal: number;
+  /** Cumul des ₭ venant des tâches cochées. */
+  fromTodos: number;
+  /** Cumul des ₭ venant des ventes du labo. */
+  fromProd: number;
   machines: number;
   mk2: number;
   research: number;
@@ -243,12 +287,14 @@ export interface SimResult {
   firstMk2: number | null;
   /** Revenu quotidien moyen sur les 3 derniers jours. */
   revenuePerDay: number;
+  /** Part des gains venant des tâches cochées, sur toute la partie (0 → 1). */
+  todoShare: number;
 }
 
 export function runSimulation(days: number, seed: number, strategy: Strategy): SimResult {
   state = createGame(START, seed);
 
-  // six todos quotidiennes de difficulté « normale » → 24 EN/jour visés
+  // six todos quotidiennes de difficulté « normale » : la journée type d'un joueur
   for (let i = 0; i < 6; i++) {
     state = applyAction(
       state,
@@ -281,7 +327,9 @@ export function runSimulation(days: number, seed: number, strategy: Strategy): S
     const d = new Date(now);
     const hour = d.getHours();
 
-    if (hour === 9 && d.getMinutes() === 0) {
+    // la stratégie `idle` ne coche jamais rien : elle mesure ce que vaut le jeu
+    // sans le travail réel, et donc si les todos comptent encore
+    if (hour === 9 && d.getMinutes() === 0 && strategy !== 'idle') {
       for (const todo of state.todos) {
         if (todo.kind === 'recurring') act({ type: 'CompleteTodo', id: todo.id }, now);
       }
@@ -298,9 +346,10 @@ export function runSimulation(days: number, seed: number, strategy: Strategy): S
       kessByDay.push(state.stats.kessEarnedTotal);
       rows.push({
         day: rows.length + 1,
-        energy: state.resources.energy,
         kess: state.resources.kess,
         kessTotal: state.stats.kessEarnedTotal,
+        fromTodos: state.stats.kessFromTodos,
+        fromProd: state.stats.kessFromProduction,
         machines: state.lab.machines.length,
         mk2: state.lab.machines.filter((m) => m.mk === 2).length,
         research: state.lab.researched.length,
@@ -316,5 +365,7 @@ export function runSimulation(days: number, seed: number, strategy: Strategy): S
 
   const tail = kessByDay.slice(-4);
   const revenuePerDay = tail.length >= 2 ? (tail[tail.length - 1] - tail[0]) / (tail.length - 1) : 0;
-  return { state, rows, firstMk2, revenuePerDay };
+  const earned = state.stats.kessFromTodos + state.stats.kessFromProduction;
+  const todoShare = earned > 0 ? state.stats.kessFromTodos / earned : 0;
+  return { state, rows, firstMk2, revenuePerDay, todoShare };
 }

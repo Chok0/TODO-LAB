@@ -11,7 +11,8 @@ Source de vérité unique : un objet **`GameState`** sérialisable en JSON (DEC-
 | Habitude binaire (abstinence) / compteur | `habitKind: 'abstinence' \| 'counter'` |
 | Difficulté trivial/facile/normal/corvée | `difficulty: 1 \| 2 \| 3 \| 4` |
 | Perso / pro | `category: 'perso' \| 'pro'` (valeurs FR conservées : ce sont des données, pas des identifiants) |
-| Énergie / Kess | `energy` / `kess` |
+| Kessler (monnaie unique) | `kess` |
+| Fournisseur / quota du jour | `supply` / `supply.boughtToday` |
 | Principe actif | `pa_med`, `pa_ind`, `pa_rec`, `pa_tox` (ResourceId) |
 | Clé de corruption | `corruptionKey` |
 | Faveur due | `favor` |
@@ -25,8 +26,9 @@ Source de vérité unique : un objet **`GameState`** sérialisable en JSON (DEC-
 type Timestamp = number;            // ms epoch UTC
 type DayKey = string;               // 'YYYY-MM-DD' calendrier local
 
+// une seule monnaie (DEC-14) ; tout le reste est de la matière
 type ResourceId =
-  | 'energy' | 'kess'
+  | 'kess'
   | 'harvest_med' | 'harvest_ind' | 'harvest_rec' | 'harvest_tox'
   | 'pa_med' | 'pa_ind' | 'pa_rec' | 'pa_tox';   // extensible V2 (minerais)
 
@@ -43,14 +45,22 @@ interface GameState {
   resources: Record<ResourceId, number>;
   lab: LabState;
   farm: FarmState;
+  supply: SupplyState;              // quota du Fournisseur consommé aujourd'hui
   corruption: CorruptionState;
   alignment: AlignmentState;
   narrative: NarrativeState;
   stats: Stats;                     // compteurs cumulés (paliers, textures, ventes)
 }
 
+/** Position dans la pile du bureau (DEC-15). */
+type WindowLayer = 'desktop' | 'normal' | 'top';
+
+interface SupplyState {
+  boughtToday: number;              // remis à 0 à chaque minuit local
+}
+
 interface Settings {
-  alwaysOnTop: boolean;
+  layer: WindowLayer;               // 'desktop' par défaut
   opacity: number;                  // 0.6–1
   windowPos: { x: number; y: number; w: number; h: number } | null;
   collapsedPanels: Record<string, boolean>;  // sauf panneau habitudes (replié à chaque démarrage, 03 §1.3)
@@ -186,6 +196,18 @@ Calculé à la volée par des sélecteurs purs : prix effectifs (`02` §9), band
 
 - `state.json` = `GameState` sérialisé tel quel (pretty-print 2 espaces pour la lisibilité/debug).
 - `meta.version` démarre à 1. Toute évolution de schéma = fonction `migrateVN(state) → state` ajoutée au tableau de `/src/data/migrations.ts`, appliquées séquentiellement au chargement. Une migration ne supprime jamais de données utilisateur (todos, historiques, lettres) — elle transforme.
+
+**v1 → v2 (monnaie unique, DEC-14 à DEC-16)** — ce que la migration fait, une partie en cours ne perdant rien :
+
+| Avant | Après |
+|---|---|
+| `resources.energy` | ajouté à `resources.kess` à parité, puis supprimé |
+| `completionHistory[].energyGained` | renommé `gained` |
+| `gain` / `loss` / `lastLoss` portant `'energy'` | repointés sur `'kess'` |
+| `stats.energyEarnedTotal` | devient `stats.kessFromTodos` ; l'ancien `kessEarnedTotal` devient `kessFromProduction`, et `kessEarnedTotal` est la somme des deux |
+| `settings.alwaysOnTop` | devient `settings.layer` (`false` → `'normal'`, sinon `'desktop'`) |
+| — | `supply: { boughtToday: 0 }` créé |
+| Parcelles déjà possédées | la recherche `farm_bp` est créditée d'office, sinon le farming disparaîtrait sous les pieds du joueur |
 - Compatibilité V2 anticipée : `ResourceId` extensible, `stats` extensible, champ prestige absent mais ajoutable par migration sans casse.
 
 ## 5. Invariants (validés au chargement et en fin de chaque `advanceTime` en mode dev)

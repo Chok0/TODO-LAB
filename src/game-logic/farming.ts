@@ -3,8 +3,15 @@
 import { BALANCE } from './balance';
 import { addRes, clamp, emit, round2, spendRes, type Ctx } from './core';
 import { getPlant } from './data/plants.data';
-import { canStartCycle } from './lab';
-import { isPlantUnlocked, nextPlotCost, seedCost } from './selectors';
+import {
+  isFarmUnlocked,
+  isPlantUnlocked,
+  isSupplyOpen,
+  nextPlotCost,
+  seedCost,
+  supplyPrice,
+  supplyRemaining,
+} from './selectors';
 import { HOUR, type Timestamp } from './time';
 import type { GameState, PlantId, Plot } from '../data/schema';
 
@@ -24,9 +31,54 @@ export function growthDuration(plant: PlantId, method: 'agro' | 'intensive'): nu
   return Math.round(method === 'agro' ? base * BALANCE.means.farm.agroDurationFactor : base);
 }
 
+// -------------------------------------------------------------- fournisseur
+
+/**
+ * Achat d'intrants au comptant (docs/05 §0). C'est la seule source de matière
+ * première tant que la friche n'est pas remise en culture — et elle le reste
+ * après, pour combler un trou de stock quand les parcelles n'ont pas suivi.
+ */
+export function buySupply(state: GameState, ctx: Ctx, plantId: PlantId, amount: number): boolean {
+  const wanted = Math.floor(amount);
+  if (wanted <= 0) return false;
+  if (!isSupplyOpen(state)) return false;
+  if (!isPlantUnlocked(state, plantId)) return false;
+
+  const affordableByQuota = Math.min(wanted, supplyRemaining(state));
+  if (affordableByQuota <= 0) return false;
+
+  const unit = supplyPrice(plantId);
+  const affordable = Math.min(affordableByQuota, Math.floor(state.resources.kess / unit));
+  if (affordable <= 0) return false;
+
+  if (!spendRes(state, 'kess', affordable * unit)) return false;
+  addRes(state, getPlant(plantId).harvest, affordable);
+  state.supply.boughtToday += affordable;
+  emit(ctx, { kind: 'supply_bought', plant: plantId, amount: affordable, cost: affordable * unit });
+  return true;
+}
+
+/** Le quota se recharge à minuit — c'est la seule chose que le Fournisseur oublie. */
+export function rolloverSupply(state: GameState): void {
+  state.supply.boughtToday = 0;
+}
+
 // ------------------------------------------------------------------ actions
 
+/** La remise en culture livre la friche remise en état et de quoi semer une fois. */
+export function unlockFarm(state: GameState, ctx: Ctx): void {
+  if (state.farm.plots.length > 0) return;
+  for (let i = 0; i < BALANCE.farm.startingPlots; i++) {
+    state.farm.plots.push({ id: `plot-${i + 1}`, envDebt: 0, state: { kind: 'empty' } });
+  }
+  for (const [id, n] of Object.entries(BALANCE.start.seedsOnFarmUnlock)) {
+    state.farm.seedStock[id as PlantId] = (state.farm.seedStock[id as PlantId] ?? 0) + n;
+  }
+  emit(ctx, { kind: 'farm_unlocked', plots: state.farm.plots.length });
+}
+
 export function buyPlot(state: GameState, ctx: Ctx): boolean {
+  if (!isFarmUnlocked(state)) return false;
   const cost = nextPlotCost(state);
   if (cost === null) return false;
   if (!spendRes(state, 'kess', cost)) return false;
@@ -42,6 +94,7 @@ export function plant(
   plantId: PlantId,
   method: 'agro' | 'intensive',
 ): boolean {
+  if (!isFarmUnlocked(state)) return false;
   const plot = findPlot(state, plotId);
   if (!plot || plot.state.kind !== 'empty') return false;
   // le moteur refuse l'action, pas seulement l'UI (docs/05 §8)
@@ -94,26 +147,6 @@ export function setFallow(state: GameState, _ctx: Ctx, plotId: string, on: boole
   if (plot.state.kind !== 'fallow') return false;
   plot.state = { kind: 'empty' };
   return true;
-}
-
-// ------------------------------------------------------- garde-fou anti-blocage
-
-/**
- * Une partie ne doit jamais pouvoir se retrouver définitivement bloquée : sans
- * graine, sans trésorerie et sans stock, plus rien ne peut produire de kess et
- * l'économie est morte. Une bouture est alors récupérée sur les vieux plants de
- * l'oncle. Invisible en jeu normal (docs/05 §9).
- */
-export function preventSoftlock(state: GameState, _ctx: Ctx): void {
-  const hasSeeds = Object.values(state.farm.seedStock).some((n) => (n ?? 0) > 0);
-  if (hasSeeds) return;
-  if (state.resources.kess >= getPlant('medicinal').seedCost) return;
-  if (state.farm.plots.some((p) => p.state.kind === 'growing' || p.state.kind === 'ready')) return;
-  // un reliquat inutilisable (un PA isolé) ne compte pas : la vraie question est
-  // de savoir si une machine peut encore démarrer un cycle.
-  if (state.lab.machines.some((m) => m.run !== null || canStartCycle(state, m))) return;
-
-  state.farm.seedStock.medicinal = (state.farm.seedStock.medicinal ?? 0) + 1;
 }
 
 // ------------------------------------------------------------------- temps

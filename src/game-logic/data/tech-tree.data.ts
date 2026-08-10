@@ -1,4 +1,4 @@
-/** Arbre de R&D V1 (docs/04 §1). Coûts en Énergie uniquement. */
+/** Arbre de R&D V1 (docs/04 §1). Tous les coûts sont en kessler (₭). */
 
 import { BALANCE } from '../balance';
 import type { MachineTemplateId, TechId } from '../../data/schema';
@@ -23,12 +23,13 @@ export const TECH_TREE: TechNode[] = [
     unlocksMachine: 'extractor',
   },
   {
-    id: 'still_bp',
-    label: 'Blueprint distillateur',
-    cost: BALANCE.machines.still.research,
+    id: 'farm_bp',
+    label: 'Remise en culture',
+    cost: BALANCE.research.farm,
     requires: ['extractor_bp'],
-    effect: 'Débloque le Distillateur Mk1 et la culture industrielle.',
-    unlocksMachine: 'still',
+    effect:
+      "Remet la friche de l'oncle en état : deux parcelles, et de quoi produire vos intrants au lieu de les acheter au Fournisseur.",
+    unlocksMachine: null,
   },
   {
     id: 'conveyor',
@@ -37,6 +38,14 @@ export const TECH_TREE: TechNode[] = [
     requires: ['extractor_bp'],
     effect: 'Convoyeur simple : les machines enchaînent leurs cycles tant que les intrants suivent.',
     unlocksMachine: null,
+  },
+  {
+    id: 'still_bp',
+    label: 'Blueprint distillateur',
+    cost: BALANCE.machines.still.research,
+    requires: ['extractor_bp'],
+    effect: 'Débloque le Distillateur Mk1 et la culture industrielle.',
+    unlocksMachine: 'still',
   },
   {
     id: 'adv_synthesis',

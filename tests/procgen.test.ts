@@ -17,7 +17,7 @@ function ctxFor(state: GameState, seed = state.meta.seed): Ctx {
 
 /** Partie avancée : branche illégale ouverte, une faveur due. */
 function richState(): GameState {
-  let s = give(newGame(), { energy: 900, kess: 5000 });
+  let s = give(newGame(), { kess: 40000 });
   s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
   s = doAct(s, { type: 'Research', tech: 'still_bp' });
   s = doAct(s, { type: 'Research', tech: 'adv_synthesis' });
@@ -30,7 +30,7 @@ function richState(): GameState {
 describe('1 — déterminisme', () => {
   it('produit la même partie à seed égale', () => {
     const play = () => {
-      let s = give(newGame(T0, 1234), { energy: 900, kess: 3000, harvest_med: 200 });
+      let s = give(newGame(T0, 1234), { kess: 40000, harvest_med: 200 });
       s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
       s = doAct(s, { type: 'Research', tech: 'conveyor' });
       s = doAct(s, { type: 'StartCycle', machine: 'extractor' });
@@ -47,7 +47,7 @@ describe('1 — déterminisme', () => {
   it('diverge à seed différente', () => {
     const names = new Set<string>();
     for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
-      let s = give(newGame(T0, seed), { energy: 100 });
+      let s = give(newGame(T0, seed), { kess: 100 });
       s = doAct(s, { type: 'Research', tech: 'extractor_bp' });
       names.add(s.lab.machines[0].displayName);
     }

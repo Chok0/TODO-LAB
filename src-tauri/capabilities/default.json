@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Surface minimale : fenêtre, notifications, dialogues de fichier. Rien d'autre.",
+  "description": "Surface minimale : fenêtre, notifications, dialogues de fichier. Aucun accès réseau, aucun accès disque hors sauvegarde.",
   "windows": [
     "todo",
     "atelier"
@@ -11,6 +11,7 @@
     "core:window:allow-show",
     "core:window:allow-hide",
     "core:window:allow-set-always-on-top",
+    "core:window:allow-set-always-on-bottom",
     "core:window:allow-set-position",
     "core:window:allow-set-size",
     "core:window:allow-start-dragging",

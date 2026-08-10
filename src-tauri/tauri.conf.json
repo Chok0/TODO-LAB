@@ -20,10 +20,11 @@
         "maxWidth": 480,
         "decorations": false,
         "transparent": true,
-        "alwaysOnTop": true,
+        "alwaysOnTop": false,
         "skipTaskbar": true,
         "resizable": true,
-        "shadow": false
+        "shadow": false,
+        "alwaysOnBottom": true
       },
       {
         "label": "atelier",
@@ -33,10 +34,11 @@
         "minHeight": 200,
         "decorations": false,
         "transparent": true,
-        "alwaysOnTop": true,
+        "alwaysOnTop": false,
         "skipTaskbar": true,
         "resizable": true,
-        "shadow": false
+        "shadow": false,
+        "alwaysOnBottom": true
       }
     ],
     "security": {
@@ -58,6 +60,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
     "category": "Productivity",
     "shortDescription": "Todo list gamifiée en widget desktop",
     "longDescription": "Chaque tâche accomplie alimente un atelier de chimie hérité dans la Zone Franche de Kessler."

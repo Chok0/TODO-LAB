@@ -7,7 +7,7 @@ vérifié**, et par quel moyen.
 
 | Contrôle | Moyen | État |
 |---|---|---|
-| Logique de jeu (77 tests) | `npm test` — scénarios obligatoires des docs 03→08 | ✅ |
+| Logique de jeu (86 tests) | `npm test` — scénarios obligatoires des docs 03→08 | ✅ |
 | Non-régression d'équilibrage | `tests/balance.test.ts`, adossé au simulateur | ✅ |
 | Typage frontend | `npm run check` (svelte-check) — 0 erreur, 0 avertissement | ✅ |
 | Typage global | `npx tsc --noEmit` — 0 erreur | ✅ |
@@ -24,12 +24,12 @@ Scénario rejoué de bout en bout sur l'application buildée :
 | Premier lancement | Log ouvert, lettre du notaire délivrée et lisible | ✅ |
 | Quick-add « ranger la corvée de comptabilité tous les lundis » | chips `hebdo · lun` / `perso` / `corvée` | ✅ |
 | Ajout de 5 todos (dont 2 habitudes) | chacune visible dans son groupe, groupe déplié automatiquement | ✅ |
-| Complétion des tâches | +16 EN crédités, toast, undo proposé 10 s | ✅ |
+| Complétion des tâches | cachet crédité en ₭, toast, undo proposé 10 s | ✅ |
 | Panneau Habitudes | 2 habitudes, compteur `+1` → 2, pénalité affichée | ✅ |
-| R&D « Blueprint extracteur » (10 EN) | recherche possible, extracteur assemblé, panneau Production révélé | ✅ |
+| R&D « Blueprint extracteur » (20 ₭) | recherche possible, extracteur assemblé, panneau Production révélé | ✅ |
 | Farming : semer | choix plante → choix méthode (coût/rendement/durée affichés) → parcelle en croissance | ✅ |
 | Mode discret (`Ctrl+D`) | barre fine d'icônes + badges, retour à l'état précédent | ✅ |
-| Rechargement de l'app | état restauré à l'identique (EN 6 → 6) | ✅ |
+| Rechargement de l'app | état restauré à l'identique | ✅ |
 | Habitudes après redémarrage | panneau replié, contenu non affiché (docs/03 §1.3) | ✅ |
 | Console navigateur | aucune erreur | ✅ |
 
@@ -69,6 +69,24 @@ fenêtres, compositeur, ni bureau :
 | Synchronisation hôte/cliente entre fenêtres Tauri | ⚠️ compile et suit un modèle simple (un seul écrivain), **non exécuté** faute de gestionnaire de fenêtres dans le conteneur |
 | Placement réel des deux fenêtres sur la zone de travail | ⚠️ non vérifiable ici — à contrôler au premier lancement |
 
+## 4c. Révision « monnaie unique » — vérifié / non vérifié
+
+Changements DEC-14 (monnaie unique), DEC-15 (fenêtres au niveau du bureau) et
+DEC-16 (Fournisseur + farming à débloquer).
+
+| Point | Moyen | État |
+|---|---|---|
+| 86 tests de logique, dont 8 nouveaux sur le Fournisseur et la friche verrouillée | `npm test` | ✅ |
+| Le jeu ne démarre pas sans todos cochées (stratégie `idle` : 0 ₭ de production, 0 machine) | simulateur, `tests/balance.test.ts` | ✅ |
+| Part des todos dans le revenu comprise entre 20 % et 80 % à tous les stades, cachet croissant | simulateur sur 30 j, deux stratégies | ✅ |
+| Corruption totale = piège : moins de ₭ cumulés et revenu/jour inférieur à la voie légale sur 30 j | simulateur | ✅ |
+| Acheter coûte toujours plus cher que cultiver, sur les quatre plantes | test unitaire | ✅ |
+| Migration v1 → v2 sans perte (Énergie fusionnée, historiques renommés, farming crédité) | relecture + normalisation ; **pas encore rejouée sur une vraie sauvegarde v1** | ⚠️ |
+| Parcours navigateur : étal fermé → recherche → étal ouvert → achat → cycle lancé, 0 erreur console | Chromium piloté, captures relues | ✅ |
+| Déploiement du bandeau : le panneau s'ouvre **au-dessus** de la scène, qui reste visible | capture | ✅ (côté web ; le redimensionnement de la fenêtre Tauri reste à voir sur machine réelle) |
+| Fenêtres `alwaysOnBottom` réellement sous les applications, et bascule des 3 niveaux | — | ⚠️ non vérifiable sans gestionnaire de fenêtres |
+| `set_atelier_expanded` : la fenêtre grandit vers le haut sans passer sous la barre des tâches | — | ⚠️ à contrôler au premier lancement |
+
 ## 5. Écarts assumés par rapport à la spécification
 
 | Point | Spec | Livré | Raison |
@@ -78,3 +96,7 @@ fenêtres, compositeur, ni bureau :
 | Rendement médicinale, coût agroécologie, taxe de corruption, coût des incidents, bonus Coopérative | valeurs initiales des docs | recalibrés | L'économie légale ne décollait pas et la voie illégale était strictement supérieure. Corrigé et documenté dans `02` et `06`. |
 | Presse et Catalyseur (machines) | V1.5 | absents | Conforme au périmètre. |
 | Nombre de fenêtres | une seule (DEC-01) | deux (DEC-12) | Le dock vertical étouffait la partie jeu. Demande explicite, et le bandeau large est ce qui permet une vraie scène. |
+| Ressource primaire | Énergie distincte du Kess (DEC-06) | monnaie unique (DEC-14) | Demande explicite. Le cachet des todos est désormais indexé sur le meilleur prix de vente **net** : sans cette indexation, cocher une case devenait dérisoire dès la deuxième machine. |
+| Garde-fou anti-blocage du farming | bouture de secours (`05` §9) | retiré | Avec une monnaie unique, le blocage qu'il couvrait ne peut plus se produire. Un chemin jamais emprunté est un chemin jamais testé. |
+| Durées de croissance | 20 à 60 min | 3 à 14 h | Une culture prête toutes les vingt minutes n'est jamais prête au moment où l'on regarde un widget. |
+| Prix et coûts | barème V1 | rehaussés d'un facteur ~3 à 20 | Conséquence mécanique de la fusion : les deux échelles (R&D en EN, achats en ₭) devaient se rejoindre, et la courbe de progression a été recalée au simulateur sur 21 jours. |

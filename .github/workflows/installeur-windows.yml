@@ -73,6 +73,19 @@ jobs:
           releaseDraft: true
           prerelease: false
 
+      # De quoi vérifier que le fichier téléchargé est bien celui que GitHub a
+      # produit à partir de ce dépôt : comparez l'empreinte affichée ici avec
+      # `Get-FileHash .\\labo-kessler_1.0.0_x64-setup.exe` chez vous.
+      - name: Empreintes SHA-256
+        if: always()
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path src-tauri/target/release/bundle -Recurse -Include *.exe,*.msi |
+            ForEach-Object {
+              $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+              Write-Host "$h  $($_.Name)"
+            }
+
       # lancement manuel : l'installeur se télécharge depuis la page du run
       - name: Publier l'installeur
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
